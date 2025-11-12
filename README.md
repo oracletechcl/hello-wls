@@ -114,6 +114,16 @@ Click on "View Host Information" to see detailed server environment data.
 - `/` or `/index.html` - Welcome page
 - `/hostinfo` - Host information servlet displaying all server details
 
+## Content
+
+Upon deployment, the application will look like this:   
+
+![WebLogic Host Info Application](img/index.png)
+
+Later upon clicking button you will see this: 
+
+![WebLogic Host Info Details](img/detail.png)
+
 ## Development
 
 To modify the application:
