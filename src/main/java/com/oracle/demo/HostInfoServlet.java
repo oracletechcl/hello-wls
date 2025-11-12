@@ -42,6 +42,9 @@ public class HostInfoServlet extends HttpServlet {
             String userHome = System.getProperty("user.home");
             String userDir = System.getProperty("user.dir");
             
+            // Get WebLogic Server information
+            String serverName = System.getProperty("weblogic.Name", "Unknown");
+            
             // Get runtime information
             Runtime runtime = Runtime.getRuntime();
             long maxMemory = runtime.maxMemory() / (1024 * 1024);
@@ -76,6 +79,15 @@ public class HostInfoServlet extends HttpServlet {
             out.println("<div class='header'>");
             out.println("<h1>Hello from WebLogic Server!</h1>");
             out.println("<p>Server Time: " + new Date() + "</p>");
+            out.println("<p><strong>Managed Server: " + serverName + "</strong></p>");
+            out.println("</div>");
+            
+            // WebLogic Server Information
+            out.println("<div class='info-section'>");
+            out.println("<h2>WebLogic Server Information</h2>");
+            out.println("<table>");
+            out.println("<tr><td>Server Name</td><td>" + serverName + "</td></tr>");
+            out.println("</table>");
             out.println("</div>");
             
             // Network Information

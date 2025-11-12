@@ -113,13 +113,29 @@ public class SessionManagerServlet extends HttpServlet {
         String userName = (String) session.getAttribute(USER_NAME_ATTR);
         info.setUserName(userName);
         
-        // Get server information
+        // Get WebLogic Server information
+        String serverName = System.getProperty("weblogic.Name", "Unknown");
         try {
             InetAddress localhost = InetAddress.getLocalHost();
-            info.setPrimaryServerNode(localhost.getHostName());
+            info.setPrimaryServerNode(serverName + " (" + localhost.getHostName() + ")");
         } catch (Exception e) {
-            info.setPrimaryServerNode("Unknown");
+            info.setPrimaryServerNode(serverName);
         }
+        
+        // Get secondary server from session cookie if available
+        // WebLogic appends secondary server info to JSESSIONID in clustered environments
+        String sessionCookie = request.getHeader("Cookie");
+        String secondaryServer = "None (not clustered)";
+        if (sessionCookie != null && sessionCookie.contains("JSESSIONID")) {
+            // JSESSIONID format: <sessionid>!<primary>!<secondary>
+            String[] parts = session.getId().split("!");
+            if (parts.length > 2) {
+                secondaryServer = parts[2];
+            } else if (parts.length > 1) {
+                secondaryServer = "Configured (cluster member: " + parts[1] + ")";
+            }
+        }
+        info.setSecondaryServerNode(secondaryServer);
         
         // Collect all session attributes
         Enumeration<String> attributeNames = session.getAttributeNames();
@@ -235,6 +251,7 @@ public class SessionManagerServlet extends HttpServlet {
         out.println("<h2>Server & Clustering Information</h2>");
         out.println("<table>");
         out.println("<tr><td>Primary Server Node</td><td>" + sessionInfo.getPrimaryServerNode() + "</td></tr>");
+        out.println("<tr><td>Secondary Server Node</td><td>" + sessionInfo.getSecondaryServerNode() + "</td></tr>");
         out.println("<tr><td>Session Replication</td><td>" + (sessionInfo.isReplicated() ? "Enabled (configured)" : "Disabled") + "</td></tr>");
         out.println("<tr><td>Persistence Type</td><td>In-Memory Replication (WebLogic Cluster)</td></tr>");
         out.println("</table>");

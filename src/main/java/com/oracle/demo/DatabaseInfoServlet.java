@@ -78,6 +78,8 @@ public class DatabaseInfoServlet extends HttpServlet {
             out.println("<div class='header'>");
             out.println("<h1>Oracle Autonomous Database</h1>");
             out.println("<p>Connection Status & Configuration</p>");
+            String serverName = System.getProperty("weblogic.Name", "Unknown");
+            out.println("<p><strong>Managed Server: " + serverName + "</strong></p>");
             out.println("<p style='font-size: 14px;'>Server Time: " + new Date() + "</p>");
             out.println("</div>");
             

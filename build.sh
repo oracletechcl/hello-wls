@@ -8,7 +8,7 @@ echo "Building WebLogic Host Info Application"
 echo "========================================="
 
 # Set JAVA_HOME if not already set
-export JAVA_HOME="${JAVA_HOME:-/home/opc/DevOps/jdk1.8.0_202}"
+export JAVA_HOME="${JAVA_HOME:-/opt/jdk}"
 
 # Check if JAVA_HOME is set and exists
 if [ ! -d "${JAVA_HOME}" ]; then

@@ -94,6 +94,8 @@ public class WebServiceDemoServlet extends HttpServlet {
         out.println("<h1>EJB & Web Service Demo</h1>");
         out.println("<p>Stateless Session Bean with JAX-WS Web Service</p>");
         out.println("<p style='font-size: 14px;'>Server Time: " + new Date() + "</p>");
+        String serverName = System.getProperty("weblogic.Name", "Unknown");
+        out.println("<p><strong>Managed Server: " + serverName + "</strong></p>");
         out.println("</div>");
         
         // EJB Invocation Results
