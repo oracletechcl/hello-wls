@@ -8,17 +8,67 @@
     <display-name>Hello WebLogic Host Info Application</display-name>
     
     <description>
-        A sample application that displays host information on WebLogic Server 12.2.1.4
+        A sample application that displays host information, Oracle Autonomous Database connectivity, 
+        and session management capabilities on WebLogic Server 12.2.1.4
     </description>
+    
+    <!-- Session Configuration -->
+    <session-config>
+        <!-- Session timeout in minutes (30 minutes) -->
+        <session-timeout>30</session-timeout>
+        
+        <!-- Cookie configuration for session tracking -->
+        <cookie-config>
+            <name>JSESSIONID</name>
+            <http-only>true</http-only>
+            <secure>false</secure>
+            <!-- Set to true in production with HTTPS -->
+        </cookie-config>
+        
+        <!-- Session tracking modes -->
+        <tracking-mode>COOKIE</tracking-mode>
+        <tracking-mode>URL</tracking-mode>
+    </session-config>
     
     <servlet>
         <servlet-name>HostInfoServlet</servlet-name>
         <servlet-class>com.oracle.demo.HostInfoServlet</servlet-class>
     </servlet>
     
+    <servlet>
+        <servlet-name>DatabaseInfoServlet</servlet-name>
+        <servlet-class>com.oracle.demo.DatabaseInfoServlet</servlet-class>
+        <load-on-startup>1</load-on-startup>
+    </servlet>
+    
+    <servlet>
+        <servlet-name>SessionManagerServlet</servlet-name>
+        <servlet-class>com.oracle.demo.SessionManagerServlet</servlet-class>
+    </servlet>
+    
+    <servlet>
+        <servlet-name>WebServiceDemoServlet</servlet-name>
+        <servlet-class>com.oracle.demo.WebServiceDemoServlet</servlet-class>
+    </servlet>
+    
     <servlet-mapping>
         <servlet-name>HostInfoServlet</servlet-name>
         <url-pattern>/hostinfo</url-pattern>
+    </servlet-mapping>
+    
+    <servlet-mapping>
+        <servlet-name>DatabaseInfoServlet</servlet-name>
+        <url-pattern>/database</url-pattern>
+    </servlet-mapping>
+    
+    <servlet-mapping>
+        <servlet-name>SessionManagerServlet</servlet-name>
+        <url-pattern>/session</url-pattern>
+    </servlet-mapping>
+    
+    <servlet-mapping>
+        <servlet-name>WebServiceDemoServlet</servlet-name>
+        <url-pattern>/webservice</url-pattern>
     </servlet-mapping>
     
     <welcome-file-list>

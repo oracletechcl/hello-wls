@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<weblogic-web-app xmlns="http://xmlns.oracle.com/weblogic/weblogic-web-app"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://xmlns.oracle.com/weblogic/weblogic-web-app
+                  http://xmlns.oracle.com/weblogic/weblogic-web-app/1.9/weblogic-web-app.xsd">
+    
+    <!-- Application Context Root -->
+    <context-root>/hostinfo</context-root>
+    
+    <!-- Session Descriptor for WebLogic-specific session configuration -->
+    <session-descriptor>
+        <!-- 
+            Session Persistence and Replication Configuration
+            
+            Available persistence types:
+            - memory: In-memory session storage (default for standalone)
+            - replicated: In-memory replication across cluster members (recommended for clusters)
+            - replicated_if_clustered: Automatically use replication in clusters, memory otherwise
+            - async-replicated: Asynchronous replication for better performance
+            - async-replicated-if-clustered: Async replication in clusters only
+            - file: File-based persistence (for single server)
+            - jdbc: Database-backed persistence (for disaster recovery)
+            - cookie: Client-side session storage (limited size)
+        -->
+        <persistent-store-type>replicated_if_clustered</persistent-store-type>
+        
+        <!-- 
+            Session timeout in seconds (overrides web.xml if specified)
+            30 minutes = 1800 seconds
+        -->
+        <timeout-secs>1800</timeout-secs>
+        
+        <!-- 
+            Invalidation interval: how often WebLogic checks for expired sessions (in seconds)
+            Default is 60 seconds
+        -->
+        <invalidation-interval-secs>60</invalidation-interval-secs>
+        
+        <!-- 
+            Session ID length for enhanced security
+            Longer IDs are more secure but use more bandwidth
+        -->
+        <id-length>52</id-length>
+        
+        <!-- 
+            Session monitoring enables JMX monitoring of session statistics
+        -->
+        <monitoring-attribute-name>session-monitoring</monitoring-attribute-name>
+        
+        <!-- 
+            Cookie settings
+        -->
+        <cookie-name>JSESSIONID</cookie-name>
+        <cookie-path>/</cookie-path>
+        <cookie-http-only>true</cookie-http-only>
+        <!-- 
+            Set cookie-secure to true when using HTTPS in production
+            <cookie-secure>true</cookie-secure>
+        -->
+        
+        <!-- 
+            URL rewriting configuration
+            Enable URL rewriting as a fallback when cookies are disabled
+        -->
+        <url-rewriting-enabled>true</url-rewriting-enabled>
+        
+        <!-- 
+            Session cache size: maximum number of sessions in memory
+            Adjust based on expected concurrent users and available memory
+        -->
+        <cache-size>1024</cache-size>
+        
+        <!-- 
+            Sharing sessions across web applications
+            Set to true to share session data between different web apps
+        -->
+        <sharing-enabled>false</sharing-enabled>
+        
+        <!-- 
+            Clustering and Replication Settings
+            These settings apply when running in a WebLogic cluster
+        -->
+        
+        <!-- 
+            Replication type for clustered environments:
+            - in-memory: Full session replication to secondary server
+            - in-memory-with-overflow: Overflow to disk if memory is full
+        -->
+        <persistent-store-pool>
+            <!-- Configure if using JDBC persistence -->
+            <!-- <pool-name>SessionPool</pool-name> -->
+        </persistent-store-pool>
+        
+        <!-- 
+            Async replication settings for better performance in clusters
+            Sessions are replicated asynchronously to reduce response time
+        -->
+        <!-- <async-replication-enabled>true</async-replication-enabled> -->
+        
+        <!-- 
+            Maximum number of retries for session replication
+        -->
+        <!-- <replication-max-retries>3</replication-max-retries> -->
+        
+        <!-- 
+            Debug flags for troubleshooting session issues
+            Uncomment to enable detailed session logging
+        -->
+        <!-- <debug-enabled>true</debug-enabled> -->
+        
+    </session-descriptor>
+    
+    <!-- 
+        Container Descriptor
+        Additional WebLogic-specific container settings
+    -->
+    <container-descriptor>
+        <!-- 
+            Optimistic concurrency for better performance
+            WebLogic won't lock sessions, allowing concurrent access
+        -->
+        <optimistic-serialization>true</optimistic-serialization>
+        
+        <!-- 
+            Redirect content type
+        -->
+        <redirect-content-type>text/html</redirect-content-type>
+        
+        <!-- 
+            Show archived real path in file system
+        -->
+        <show-archived-real-path-enabled>true</show-archived-real-path-enabled>
+    </container-descriptor>
+    
+    <!-- 
+        JSP Descriptor
+        JSP compilation and runtime settings
+    -->
+    <jsp-descriptor>
+        <keepgenerated>true</keepgenerated>
+        <page-check-seconds>1</page-check-seconds>
+        <verbose>false</verbose>
+    </jsp-descriptor>
+    
+</weblogic-web-app>

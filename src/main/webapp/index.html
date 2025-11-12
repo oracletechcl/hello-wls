@@ -52,6 +52,27 @@
             background-color: #a33829;
             transform: translateY(-2px);
         }
+        .btn-secondary {
+            background-color: #667eea;
+        }
+        .btn-secondary:hover {
+            background-color: #5568d3;
+        }
+        .btn-tertiary {
+            background-color: #28a745;
+        }
+        .btn-tertiary:hover {
+            background-color: #218838;
+        }
+        .btn-quaternary {
+            background-color: #ff6b35;
+        }
+        .btn-quaternary:hover {
+            background-color: #e55a2b;
+        }
+        .button-group {
+            margin: 20px 0;
+        }
         .description {
             color: #555;
             margin: 30px 0;
@@ -95,20 +116,35 @@
         <p class="subtitle">Host Information Application</p>
         
         <div class="description">
-            Welcome to the WebLogic Server 12.2.1.4 Host Information application. 
-            This demo application displays comprehensive information about the server environment.
+            Welcome to the WebLogic Server 12.2.1.4 demonstration application. 
+            Explore server environment, database connectivity, session management, and EJB web services.
         </div>
         
-        <a href="hostinfo" class="btn">View Host Information</a>
+        <div class="button-group">
+            <a href="hostinfo" class="btn">View Host Information</a>
+            <a href="database" class="btn btn-secondary">Database Connection</a>
+            <a href="session" class="btn btn-tertiary">Session Management</a>
+            <a href="webservice" class="btn btn-quaternary">EJB Web Service</a>
+        </div>
         
         <div class="features">
-            <h3>What you'll see:</h3>
+            <h3>Application Features:</h3>
             <ul>
                 <li>Network Information (Hostname, IP Address, Network Interfaces)</li>
                 <li>Operating System Details (Name, Version, Architecture)</li>
                 <li>Java Runtime Information (Version, Vendor, Home Directory)</li>
                 <li>Memory Statistics (Max, Total, Free, Used Memory)</li>
                 <li>User & Environment Information</li>
+                <li>Oracle Autonomous Database Integration (Mock & Real ADB)</li>
+                <li>Connection Pool Management with Oracle UCP</li>
+                <li>Database Connectivity Testing & Monitoring</li>
+                <li>HTTP Session Management & Tracking</li>
+                <li>Session Persistence & Replication (Clustered HA)</li>
+                <li>Session State Management & Timeout Control</li>
+                <li>Stateless Session Beans (EJB 3.x)</li>
+                <li>JAX-WS SOAP Web Services</li>
+                <li>Dependency Injection with @EJB</li>
+                <li>Automatic WSDL Generation</li>
             </ul>
         </div>
         
