@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hello Spring Boot - Host Info App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            background-color: white;
+            padding: 50px;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            text-align: center;
+            max-width: 600px;
+        }
+        h1 {
+            color: #6db33f;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        .logo {
+            font-size: 80px;
+            margin-bottom: 20px;
+        }
+        .btn {
+            display: inline-block;
+            padding: 15px 30px;
+            margin: 10px;
+            background-color: #6db33f;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 1.1em;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+        .btn:hover {
+            background-color: #5a9e34;
+            transform: translateY(-2px);
+        }
+        .btn-secondary {
+            background-color: #667eea;
+        }
+        .btn-secondary:hover {
+            background-color: #5568d3;
+        }
+        .btn-tertiary {
+            background-color: #28a745;
+        }
+        .btn-tertiary:hover {
+            background-color: #218838;
+        }
+        .btn-quaternary {
+            background-color: #ff6b35;
+        }
+        .btn-quaternary:hover {
+            background-color: #e55a2b;
+        }
+        .btn-swagger {
+            background-color: #85ea2d;
+        }
+        .btn-swagger:hover {
+            background-color: #6bc211;
+        }
+        .button-group {
+            margin: 20px 0;
+        }
+        .description {
+            color: #555;
+            margin: 30px 0;
+            line-height: 1.6;
+        }
+        .features {
+            margin-top: 30px;
+            text-align: left;
+        }
+        .features h3 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+        .features ul {
+            list-style: none;
+            padding: 0;
+        }
+        .features li {
+            padding: 8px 0;
+            color: #666;
+        }
+        .features li:before {
+            content: "✓ ";
+            color: #6db33f;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            color: #999;
+            font-size: 0.9em;
+        }
+        .comparison {
+            margin-top: 30px;
+            text-align: left;
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+        }
+        .comparison h3 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .comparison-table td {
+            padding: 8px;
+            border-bottom: 1px solid #ddd;
+        }
+        .comparison-table td:first-child {
+            font-weight: bold;
+            color: #c74634;
+        }
+        .comparison-table td:nth-child(2) {
+            color: #6db33f;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">🚀</div>
+        <h1>Hello Spring Boot!</h1>
+        <p class="subtitle">Host Information Application (Migrated from WebLogic)</p>
+        
+        <div class="description">
+            Welcome to the Spring Boot 3.x demonstration application. 
+            This is a modernized version of the WebLogic Server 12.2.1.4 application with REST APIs,
+            embedded Tomcat, and HikariCP connection pooling.
+        </div>
+        
+        <div class="button-group">
+            <a href="/hostinfo/api/host-info" class="btn">View Host Information (JSON)</a>
+            <a href="/hostinfo/api/database-info" class="btn btn-secondary">Database Connection (JSON)</a>
+            <a href="/hostinfo/api/session-info" class="btn btn-tertiary">Session Management (JSON)</a>
+            <a href="/hostinfo/api/greet?name=Spring" class="btn btn-quaternary">Greeting Service (JSON)</a>
+            <a href="/hostinfo/swagger-ui.html" class="btn btn-swagger">Swagger API Docs</a>
+        </div>
+        
+        <div class="features">
+            <h3>Application Features:</h3>
+            <ul>
+                <li>REST APIs with JSON responses (not HTML servlets)</li>
+                <li>Spring Boot 3.x with embedded Tomcat</li>
+                <li>Host information API (hostname, IP, OS, Java, memory)</li>
+                <li>Database connectivity with HikariCP (instead of Oracle UCP)</li>
+                <li>HTTP session management with Spring Session support</li>
+                <li>Spring @Service beans (instead of EJB @Stateless)</li>
+                <li>RESTful endpoints (instead of JAX-WS SOAP)</li>
+                <li>Dependency injection with @Autowired (instead of @EJB)</li>
+                <li>Interactive Swagger/OpenAPI documentation</li>
+                <li>Spring Boot Actuator for health checks</li>
+                <li>Fast startup time (~5 seconds vs 60+ seconds)</li>
+            </ul>
+        </div>
+        
+        <div class="comparison">
+            <h3>WebLogic vs Spring Boot Comparison:</h3>
+            <table class="comparison-table">
+                <tr>
+                    <td>Packaging</td>
+                    <td>WAR → JAR</td>
+                </tr>
+                <tr>
+                    <td>Server</td>
+                    <td>External WebLogic → Embedded Tomcat</td>
+                </tr>
+                <tr>
+                    <td>Services</td>
+                    <td>@Stateless EJB → @Service</td>
+                </tr>
+                <tr>
+                    <td>Injection</td>
+                    <td>@EJB → @Autowired</td>
+                </tr>
+                <tr>
+                    <td>Web APIs</td>
+                    <td>Servlets + JAX-WS → REST Controllers</td>
+                </tr>
+                <tr>
+                    <td>Connection Pool</td>
+                    <td>Oracle UCP → HikariCP</td>
+                </tr>
+                <tr>
+                    <td>Configuration</td>
+                    <td>weblogic.xml → application.yml</td>
+                </tr>
+                <tr>
+                    <td>Startup Time</td>
+                    <td>60+ seconds → ~5 seconds</td>
+                </tr>
+            </table>
+        </div>
+        
+        <div class="footer">
+            <p>Powered by Spring Boot 3.2.0 with Java 17</p>
+            <p>Migrated from Oracle WebLogic Server 12.2.1.4</p>
+        </div>
+    </div>
+</body>
+</html>
