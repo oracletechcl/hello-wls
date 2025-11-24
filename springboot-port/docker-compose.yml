@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  hostinfo:
+    image: hostinfo:latest
+    container_name: hostinfo-app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
+      - DB_PASSWORD=${DB_PASSWORD:-changeit}
+      - JAVA_OPTS=-Xmx512m -Xms256m
+    volumes:
+      # Mount Oracle wallet if using real database
+      - ${WALLET_PATH:-./wallet}:/app/wallet:ro
+    networks:
+      - hostinfo-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/hostinfo/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  hostinfo-network:
+    driver: bridge
