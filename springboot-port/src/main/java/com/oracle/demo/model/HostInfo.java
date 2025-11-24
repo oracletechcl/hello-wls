@@ -1,7 +1,6 @@
 package com.oracle.demo.model;
 
 import java.util.Date;
-import java.util.List;
 import java.util.Map;
 
 /**

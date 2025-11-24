@@ -51,13 +51,6 @@
             <version>23.3.0.23.09</version>
         </dependency>
 
-        <!-- Oracle UCP (Universal Connection Pool) -->
-        <dependency>
-            <groupId>com.oracle.database.jdbc</groupId>
-            <artifactId>ucp</artifactId>
-            <version>23.3.0.23.09</version>
-        </dependency>
-
         <!-- Oracle Security for Wallet (needed for ADB) -->
         <dependency>
             <groupId>com.oracle.database.security</groupId>
