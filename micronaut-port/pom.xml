@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
+         http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.micronaut.platform</groupId>
+        <artifactId>micronaut-parent</artifactId>
+        <version>4.7.6</version>
+    </parent>
+
+    <groupId>com.oracle.demo</groupId>
+    <artifactId>hostinfo</artifactId>
+    <version>1.0.0</version>
+    <packaging>jar</packaging>
+
+    <name>Micronaut Host Information Application</name>
+    <description>A sample Micronaut application migrated from WebLogic Server 12.2.1.4</description>
+
+    <properties>
+        <jdk.version>17</jdk.version>
+        <release.version>17</release.version>
+        <micronaut.version>4.7.6</micronaut.version>
+        <micronaut.runtime>netty</micronaut.runtime>
+        <exec.mainClass>com.oracle.demo.Application</exec.mainClass>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencies>
+        <!-- Micronaut HTTP Server -->
+        <dependency>
+            <groupId>io.micronaut</groupId>
+            <artifactId>micronaut-http-server-netty</artifactId>
+            <scope>compile</scope>
+        </dependency>
+
+        <!-- Micronaut Serialization Jackson -->
+        <dependency>
+            <groupId>io.micronaut.serde</groupId>
+            <artifactId>micronaut-serde-jackson</artifactId>
+            <scope>compile</scope>
+        </dependency>
+
+        <!-- Micronaut Validation -->
+        <dependency>
+            <groupId>io.micronaut.validation</groupId>
+            <artifactId>micronaut-validation</artifactId>
+            <scope>compile</scope>
+        </dependency>
+
+        <!-- Micronaut Session -->
+        <dependency>
+            <groupId>io.micronaut.session</groupId>
+            <artifactId>micronaut-session</artifactId>
+            <scope>compile</scope>
+        </dependency>
+
+        <!-- Micronaut OpenAPI / Swagger -->
+        <dependency>
+            <groupId>io.micronaut.openapi</groupId>
+            <artifactId>micronaut-openapi</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.swagger.core.v3</groupId>
+            <artifactId>swagger-annotations</artifactId>
+            <scope>compile</scope>
+        </dependency>
+
+        <!-- Micronaut SQL / JDBC -->
+        <dependency>
+            <groupId>io.micronaut.sql</groupId>
+            <artifactId>micronaut-jdbc-hikari</artifactId>
+            <scope>compile</scope>
+        </dependency>
+
+        <!-- Oracle JDBC Driver -->
+        <dependency>
+            <groupId>com.oracle.database.jdbc</groupId>
+            <artifactId>ojdbc11</artifactId>
+            <version>23.3.0.23.09</version>
+        </dependency>
+
+        <!-- Oracle Security for Wallet (needed for ADB) -->
+        <dependency>
+            <groupId>com.oracle.database.security</groupId>
+            <artifactId>oraclepki</artifactId>
+            <version>21.9.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.oracle.database.security</groupId>
+            <artifactId>osdt_core</artifactId>
+            <version>21.9.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.oracle.database.security</groupId>
+            <artifactId>osdt_cert</artifactId>
+            <version>21.9.0.0</version>
+        </dependency>
+
+        <!-- Micronaut Management -->
+        <dependency>
+            <groupId>io.micronaut</groupId>
+            <artifactId>micronaut-management</artifactId>
+            <scope>compile</scope>
+        </dependency>
+
+        <!-- Logging -->
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- Annotation processors -->
+        <dependency>
+            <groupId>io.micronaut</groupId>
+            <artifactId>micronaut-inject</artifactId>
+            <scope>compile</scope>
+        </dependency>
+
+        <!-- YAML Configuration -->
+        <dependency>
+            <groupId>org.yaml</groupId>
+            <artifactId>snakeyaml</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- Testing -->
+        <dependency>
+            <groupId>io.micronaut.test</groupId>
+            <artifactId>micronaut-test-junit5</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <finalName>hostinfo</finalName>
+        <plugins>
+            <plugin>
+                <groupId>io.micronaut.maven</groupId>
+                <artifactId>micronaut-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <annotationProcessorPaths combine.children="append">
+                        <path>
+                            <groupId>io.micronaut</groupId>
+                            <artifactId>micronaut-inject-java</artifactId>
+                            <version>${micronaut.version}</version>
+                        </path>
+                        <path>
+                            <groupId>io.micronaut.serde</groupId>
+                            <artifactId>micronaut-serde-processor</artifactId>
+                            <version>2.13.0</version>
+                        </path>
+                        <path>
+                            <groupId>io.micronaut.openapi</groupId>
+                            <artifactId>micronaut-openapi</artifactId>
+                            <version>6.14.0</version>
+                        </path>
+                        <path>
+                            <groupId>io.micronaut.validation</groupId>
+                            <artifactId>micronaut-validation-processor</artifactId>
+                            <version>4.8.0</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.5.1</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>${exec.mainClass}</mainClass>
+                                </transformer>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                            </transformers>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

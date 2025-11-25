@@ -1,0 +1,61 @@
+micronaut:
+  application:
+    name: hostinfo
+  server:
+    port: 8080
+    context-path: /hostinfo
+  session:
+    http:
+      enabled: true
+      cookie-path: /
+      cookie-name: SESSION
+  router:
+    static-resources:
+      default:
+        enabled: true
+        mapping: /**
+        paths: classpath:static
+
+# Database configuration (disabled by default for mock mode)
+datasources:
+  default:
+    enabled: ${DATASOURCE_ENABLED:false}
+    url: ${DB_URL:jdbc:oracle:thin:@localhost:1521/mockdb}
+    username: ${DB_USER:admin}
+    password: ${DB_PASSWORD:}
+    driver-class-name: oracle.jdbc.OracleDriver
+    pool-name: HikariPool-hostinfo
+    maximum-pool-size: 10
+    minimum-idle: 2
+    connection-timeout: 30000
+    idle-timeout: 600000
+    max-lifetime: 1800000
+
+# Management endpoints
+endpoints:
+  all:
+    enabled: true
+    sensitive: false
+  health:
+    enabled: true
+    details-visible: ANONYMOUS
+  info:
+    enabled: true
+
+# Application-specific configuration
+app:
+  database:
+    mock-mode: ${MOCK_MODE:true}
+    service-name: ${DB_SERVICE_NAME:}
+    wallet-location: ${DB_WALLET_LOCATION:}
+
+# Logging configuration
+logger:
+  levels:
+    com.oracle.demo: INFO
+    io.micronaut: INFO
+
+# Jackson configuration for JSON serialization
+jackson:
+  serialization:
+    indentOutput: true
