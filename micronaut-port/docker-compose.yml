@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  hostinfo:
+    image: hostinfo:latest
+    container_name: hostinfo-micronaut
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - MOCK_MODE=${MOCK_MODE:-true}
+      - DB_PASSWORD=${DB_PASSWORD:-changeit}
+      - JAVA_OPTS=-Xmx512m -Xms256m
+    volumes:
+      # Mount Oracle wallet if using real database
+      - ${WALLET_PATH:-./wallet}:/app/wallet:ro
+    networks:
+      - hostinfo-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/hostinfo/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  hostinfo-network:
+    driver: bridge
