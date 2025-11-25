@@ -1,8 +1,13 @@
 server:
-  port: 8080
+  port: 8081
   host: 0.0.0.0
   features:
     print-details: true
+  static:
+    classpath:
+      location: /static
+      welcome: index.html
+      context: /hostinfo
 
 # Application configuration
 app:

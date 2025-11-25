@@ -115,6 +115,43 @@ if [ "$BUILD_JAR" = true ]; then
     fi
 fi
 
+# Stop with docker-compose if requested
+if [ "$DOCKER_COMPOSE_DOWN" = true ]; then
+    echo ""
+    echo "================================================"
+    echo "Stopping Application with Docker Compose"
+    echo "================================================"
+    echo ""
+
+    if command -v podman-compose &> /dev/null; then
+        COMPOSE_CMD="podman-compose"
+    elif docker compose version &> /dev/null 2>&1; then
+        COMPOSE_CMD="docker compose"
+    elif command -v docker-compose &> /dev/null; then
+        COMPOSE_CMD="docker-compose"
+    else
+        echo "ERROR: No compose tool found (podman-compose, docker compose, or docker-compose)"
+        echo "Install with: sudo yum install -y podman-compose"
+        echo "Or use pip: pip3 install --user podman-compose"
+        exit 1
+    fi
+
+    echo "Using compose command: ${COMPOSE_CMD}"
+
+    ${COMPOSE_CMD} down
+
+    if [ $? -eq 0 ]; then
+        echo ""
+        echo "Application stopped successfully!"
+        echo ""
+    else
+        echo "ERROR: Failed to stop with docker-compose"
+        exit 1
+    fi
+
+    exit 0
+fi
+
 # Build Docker image if requested
 if [ "$DOCKER_BUILD" = true ] || [ "$DOCKER_COMPOSE_UP" = true ]; then
     echo ""
@@ -135,10 +172,10 @@ if [ "$DOCKER_BUILD" = true ] || [ "$DOCKER_COMPOSE_UP" = true ]; then
         echo "Docker image built successfully: ${IMAGE_NAME}:${IMAGE_TAG}"
         echo ""
         echo "To run with Docker:"
-        echo "  docker run -p 8080:8080 ${IMAGE_NAME}:${IMAGE_TAG}"
+        echo "  docker run -p 8082:8082 ${IMAGE_NAME}:${IMAGE_TAG}"
         echo ""
         echo "To run with environment variables:"
-        echo "  docker run -p 8080:8080 -e MOCK_MODE=false -e DB_PASSWORD=secret ${IMAGE_NAME}:${IMAGE_TAG}"
+        echo "  docker run -p 8082:8082 -e MOCK_MODE=false -e DB_PASSWORD=secret ${IMAGE_NAME}:${IMAGE_TAG}"
         echo ""
     else
         echo "ERROR: Docker build failed!"
@@ -174,21 +211,32 @@ if [ "$DOCKER_COMPOSE_UP" = true ]; then
     
     if [ $? -eq 0 ]; then
         echo ""
-        echo "Application started successfully!"
+        echo "================================================"
+        echo "✅ Micronaut Application Started Successfully!"
+        echo "================================================"
         echo ""
-        echo "🚀 App URL: http://localhost:8080/hostinfo/"
+        echo "🏠 Home Page (index.html):"
+        echo "   http://localhost:8082/hostinfo/"
         echo ""
-        echo "Access the application at:"
-        echo "  http://localhost:8080/hostinfo/"
+        echo "📡 REST API Endpoints:"
+        echo "   GET  http://localhost:8082/hostinfo/api/host-info      - Host Information"
+        echo "   GET  http://localhost:8082/hostinfo/api/database-info  - Database Status"
+        echo "   GET  http://localhost:8082/hostinfo/api/session-info   - Session Info"
+        echo "   POST http://localhost:8082/hostinfo/api/session-data   - Set Session Data"
+        echo "   DEL  http://localhost:8082/hostinfo/api/session        - Invalidate Session"
+        echo "   GET  http://localhost:8082/hostinfo/api/greet?name=X   - Greeting"
+        echo "   GET  http://localhost:8082/hostinfo/api/welcome        - Welcome Message"
+        echo "   GET  http://localhost:8082/hostinfo/api/service-info   - Service Info"
         echo ""
-        echo "Access Swagger UI at:"
-        echo "  http://localhost:8080/hostinfo/swagger/views/swagger-ui/index.html"
+        echo "📚 Documentation & Health:"
+        echo "   http://localhost:8082/hostinfo/swagger-ui/index.html  - Swagger UI"
+        echo "   http://localhost:8082/hostinfo/swagger/host-information-api-1.0.0.yml  - OpenAPI Spec"
+        echo "   http://localhost:8082/hostinfo/health                  - Health Check"
+        echo "   http://localhost:8082/hostinfo/info                    - App Info"
         echo ""
-        echo "View logs:"
-        echo "  ${COMPOSE_CMD} logs -f"
-        echo ""
-        echo "Stop the application:"
-        echo "  ${COMPOSE_CMD} down"
+        echo "🔧 Management:"
+        echo "   View logs:  ${COMPOSE_CMD} logs -f"
+        echo "   Stop app:   ${COMPOSE_CMD} down"
         echo ""
     else
         echo "ERROR: Failed to start with docker-compose"
@@ -199,12 +247,12 @@ else
     echo "  java -jar target/hostinfo.jar"
     echo ""
     echo "To run with custom configuration:"
-    echo "  java -jar target/hostinfo.jar -Dmicronaut.server.port=8081"
+    echo "  java -jar target/hostinfo.jar -Dmicronaut.server.port=8083"
     echo ""
     echo "Access the application at:"
-    echo "  http://localhost:8080/hostinfo/"
+    echo "  http://localhost:8082/hostinfo/"
     echo ""
     echo "Access Swagger UI at:"
-    echo "  http://localhost:8080/hostinfo/swagger/views/swagger-ui/index.html"
+    echo "  http://localhost:8082/hostinfo/swagger/views/swagger-ui/index.html"
     echo ""
 fi

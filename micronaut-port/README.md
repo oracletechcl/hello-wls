@@ -38,12 +38,26 @@ curl http://localhost:8080/hostinfo/api/database-info
 
 ### Session Management
 ```bash
+# Get session info
 curl http://localhost:8080/hostinfo/api/session-info
+
+# Set session data
+curl -X POST "http://localhost:8080/hostinfo/api/session-data?userName=John&customKey=myKey&customValue=myValue"
+
+# Invalidate session
+curl -X DELETE http://localhost:8080/hostinfo/api/session
 ```
 
 ### Greeting Service
 ```bash
+# Get greeting
 curl http://localhost:8080/hostinfo/api/greet?name=Micronaut
+
+# Get welcome message
+curl http://localhost:8080/hostinfo/api/welcome
+
+# Get service info
+curl http://localhost:8080/hostinfo/api/service-info
 ```
 
 ## Docker

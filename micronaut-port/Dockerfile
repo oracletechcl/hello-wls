@@ -9,7 +9,7 @@ WORKDIR /app
 COPY target/*.jar app.jar
 
 # Expose the application port
-EXPOSE 8080
+EXPOSE 8082
 
 # Set JVM options for containerized environment
 ENV JAVA_OPTS="-Xmx512m -Xms256m"

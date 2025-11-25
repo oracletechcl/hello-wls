@@ -34,7 +34,7 @@ import java.util.Map;
  *   - Used HttpSession with WebLogic in-memory replication
  * 
  * After (Helidon MP JAX-RS):
- *   @Path("/api/session")
+ *   @Path("/api/session-info")
  *   public class SessionResource
  *   - Uses CDI SessionService (can be backed by JWT, Redis, etc.)
  * 
@@ -43,7 +43,7 @@ import java.util.Map;
  *   - Redis/Hazelcast for distributed session storage
  *   - Database-backed sessions for persistence
  */
-@Path("/api/session")
+@Path("/api/session-info")
 @RequestScoped
 @Tag(name = "Session Management", description = "APIs for session management")
 public class SessionResource {

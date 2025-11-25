@@ -68,6 +68,13 @@
             <artifactId>swagger-annotations</artifactId>
             <scope>compile</scope>
         </dependency>
+        <!-- Swagger UI -->
+        <dependency>
+            <groupId>org.webjars</groupId>
+            <artifactId>swagger-ui</artifactId>
+            <version>5.17.14</version>
+            <scope>runtime</scope>
+        </dependency>
 
         <!-- Micronaut SQL / JDBC -->
         <dependency>
@@ -179,6 +186,9 @@
                             <version>4.8.0</version>
                         </path>
                     </annotationProcessorPaths>
+                    <compilerArgs>
+                        <arg>-Amicronaut.openapi.views.spec=swagger-ui.enabled=true,swagger-ui.theme=flattop</arg>
+                    </compilerArgs>
                 </configuration>
             </plugin>
             <plugin>

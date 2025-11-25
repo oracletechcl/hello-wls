@@ -24,7 +24,7 @@ import org.eclipse.microprofile.openapi.annotations.servers.Server;
  *   - Runs as executable fat JAR
  */
 @ApplicationScoped
-@ApplicationPath("/")
+@ApplicationPath("/hostinfo")
 @OpenAPIDefinition(
     info = @Info(
         title = "Helidon MP Host Information API",
@@ -42,7 +42,7 @@ import org.eclipse.microprofile.openapi.annotations.servers.Server;
         )
     ),
     servers = {
-        @Server(url = "/", description = "Local server")
+        @Server(url = "/hostinfo", description = "Local server")
     }
 )
 public class HostInfoApplication extends Application {

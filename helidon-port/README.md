@@ -20,50 +20,51 @@ java -jar target/hostinfo.jar
 
 ### Access the Application
 
-- **Host Info API**: http://localhost:8080/api/host-info
-- **Greeting API**: http://localhost:8080/api/greet?name=World
-- **Database Info**: http://localhost:8080/api/database-info
-- **Session API**: http://localhost:8080/api/session
-- **OpenAPI**: http://localhost:8080/openapi
+- **Home Page**: http://localhost:8080/hostinfo/
+- **Host Info API**: http://localhost:8080/hostinfo/api/host-info
+- **Greeting API**: http://localhost:8080/hostinfo/api/greet?name=World
+- **Database Info**: http://localhost:8080/hostinfo/api/database-info
+- **Session API**: http://localhost:8080/hostinfo/api/session-info
+- **OpenAPI**: http://localhost:8080/hostinfo/openapi
 - **Health Check**: http://localhost:8080/health
 
 ## REST API Endpoints
 
 ### Host Information
 ```bash
-curl http://localhost:8080/api/host-info
+curl http://localhost:8080/hostinfo/api/host-info
 ```
 
 ### Greeting Service
 ```bash
 # Get greeting
-curl http://localhost:8080/api/greet?name=Helidon
+curl http://localhost:8080/hostinfo/api/greet?name=Helidon
 
 # Get welcome message
-curl http://localhost:8080/api/greet/welcome
+curl http://localhost:8080/hostinfo/api/greet/welcome
 
 # Get service info
-curl http://localhost:8080/api/greet/info
+curl http://localhost:8080/hostinfo/api/greet/info
 ```
 
 ### Database Information
 ```bash
-curl http://localhost:8080/api/database-info
+curl http://localhost:8080/hostinfo/api/database-info
 ```
 
 ### Session Management
 ```bash
 # Get or create session
-curl http://localhost:8080/api/session
+curl http://localhost:8080/hostinfo/api/session-info
 
 # Get session by ID
-curl http://localhost:8080/api/session/{sessionId}
+curl http://localhost:8080/hostinfo/api/session-info/{sessionId}
 
 # Set session username
-curl -X POST "http://localhost:8080/api/session/{sessionId}/user?userName=John"
+curl -X POST "http://localhost:8080/hostinfo/api/session-info/{sessionId}/user?userName=John"
 
 # Invalidate session
-curl -X DELETE http://localhost:8080/api/session/{sessionId}
+curl -X DELETE http://localhost:8080/hostinfo/api/session-info/{sessionId}
 ```
 
 ## Docker

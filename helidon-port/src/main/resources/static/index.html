@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hello Helidon - Host Info App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #ee7752 0%, #e73c7e 50%, #23a6d5 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            background-color: white;
+            padding: 50px;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            text-align: center;
+            max-width: 700px;
+        }
+        h1 {
+            color: #e73c7e;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        .logo {
+            font-size: 80px;
+            margin-bottom: 20px;
+        }
+        .btn {
+            display: inline-block;
+            padding: 15px 30px;
+            margin: 10px;
+            background-color: #0d6efd;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 1.1em;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+        .btn:hover {
+            background-color: #0b5ed7;
+            transform: translateY(-2px);
+        }
+        .btn-secondary {
+            background-color: #6f42c1;
+        }
+        .btn-secondary:hover {
+            background-color: #5a32a3;
+        }
+        .btn-tertiary {
+            background-color: #20c997;
+        }
+        .btn-tertiary:hover {
+            background-color: #1aa179;
+        }
+        .btn-quaternary {
+            background-color: #fd7e14;
+        }
+        .btn-quaternary:hover {
+            background-color: #dc6a10;
+        }
+        .btn-swagger {
+            background-color: #85ea2d;
+            color: #333;
+        }
+        .btn-swagger:hover {
+            background-color: #6bc211;
+        }
+        .button-group {
+            margin: 20px 0;
+        }
+        .api-section {
+            margin-top: 40px;
+            text-align: left;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        .api-section h3 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+        .api-link {
+            display: block;
+            padding: 8px 0;
+            color: #e73c7e;
+            text-decoration: none;
+        }
+        .api-link:hover {
+            text-decoration: underline;
+        }
+        .framework-info {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #fff3cd;
+            border-radius: 5px;
+            font-size: 0.9em;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">☀️</div>
+        <h1>Hello Helidon!</h1>
+        <p class="subtitle">Host Information Application - Helidon MP Edition</p>
+        
+        <div class="button-group">
+            <a href="/hostinfo/api/host-info" class="btn">Host Info</a>
+            <a href="/hostinfo/api/database-info" class="btn btn-secondary">Database</a>
+            <a href="/hostinfo/api/session-info" class="btn btn-tertiary">Session</a>
+            <a href="/hostinfo/api/greet?name=Helidon" class="btn btn-quaternary">Greet</a>
+            <a href="/hostinfo/api/welcome" class="btn">Welcome</a>
+            <a href="/hostinfo/api/service-info" class="btn btn-secondary">Service Info</a>
+            <a href="/hostinfo/swagger-ui.html" class="btn btn-swagger">Swagger API Docs</a>
+        </div>
+        
+        <div class="api-section">
+            <h3>📡 Available REST APIs</h3>
+            <a href="/hostinfo/api/host-info" class="api-link">GET /hostinfo/api/host-info - Host Information</a>
+            <a href="/hostinfo/api/database-info" class="api-link">GET /hostinfo/api/database-info - Database Status</a>
+            <a href="/hostinfo/api/session-info" class="api-link">GET /hostinfo/api/session-info - Session Info</a>
+            <a href="/hostinfo/api/greet?name=World" class="api-link">GET /hostinfo/api/greet?name=World - Greeting</a>
+            <a href="/hostinfo/api/welcome" class="api-link">GET /hostinfo/api/welcome - Welcome Message</a>
+            <a href="/hostinfo/api/service-info" class="api-link">GET /hostinfo/api/service-info - Service Info</a>
+        </div>
+        
+        <div class="api-section">
+            <h3>📚 Documentation & Health</h3>
+            <a href="/hostinfo/swagger-ui.html" class="api-link">Swagger UI (Interactive API Docs)</a>
+            <a href="/openapi" class="api-link">OpenAPI Specification (YAML)</a>
+            <a href="/health" class="api-link">Health Check</a>
+            <a href="/health/ready" class="api-link">Readiness Check</a>
+            <a href="/health/live" class="api-link">Liveness Check</a>
+        </div>
+        
+        <div class="framework-info">
+            <strong>Framework:</strong> Helidon MP 3.x (MicroProfile)<br>
+            <strong>Server:</strong> Helidon Netty<br>
+            <strong>Migrated from:</strong> WebLogic Server 12.2.1.4
+        </div>
+    </div>
+</body>
+</html>
