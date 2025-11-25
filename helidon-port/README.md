@@ -104,6 +104,7 @@ Edit `src/main/resources/application.yaml` to configure:
 | `DB_PASSWORD` | Database password | (empty) |
 | `DB_SERVICE_NAME` | ADB service name | `mock_adb_high` |
 | `DB_WALLET_LOCATION` | Path to Oracle wallet | (empty) |
+| `SESSION_TIMEOUT` | Session timeout in seconds | `1800` (30 min) |
 
 ## Migration from WebLogic
 
