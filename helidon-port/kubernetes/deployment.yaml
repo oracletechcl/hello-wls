@@ -1,0 +1,88 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hostinfo-helidon
+  namespace: hostinfo-helidon
+  labels:
+    app: hostinfo-helidon
+    version: 1.0.0
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: hostinfo-helidon
+  template:
+    metadata:
+      labels:
+        app: hostinfo-helidon
+        version: 1.0.0
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8081"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: hostinfo-helidon
+        # Update with your registry
+        image: docker.io/library/hostinfo-helidon:1.0.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8081
+          name: http
+          protocol: TCP
+        env:
+        - name: JAVA_OPTS
+          valueFrom:
+            configMapKeyRef:
+              name: hostinfo-helidon-config
+              key: JAVA_OPTS
+        - name: SERVER_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: hostinfo-helidon-config
+              key: SERVER_PORT
+        - name: HELIDON_ENVIRONMENT
+          valueFrom:
+            configMapKeyRef:
+              name: hostinfo-helidon-config
+              key: HELIDON_ENVIRONMENT
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 8081
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 8081
+          initialDelaySeconds: 20
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+      securityContext:
+        fsGroup: 1000
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      terminationGracePeriodSeconds: 30

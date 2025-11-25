@@ -1,0 +1,88 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hostinfo-springboot
+  namespace: hostinfo-springboot
+  labels:
+    app: hostinfo-springboot
+    version: 1.0.0
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: hostinfo-springboot
+  template:
+    metadata:
+      labels:
+        app: hostinfo-springboot
+        version: 1.0.0
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/actuator/prometheus"
+    spec:
+      containers:
+      - name: hostinfo-springboot
+        # Update with your registry
+        image: docker.io/library/hostinfo-springboot:1.0.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        env:
+        - name: JAVA_OPTS
+          valueFrom:
+            configMapKeyRef:
+              name: hostinfo-springboot-config
+              key: JAVA_OPTS
+        - name: SERVER_SERVLET_CONTEXT_PATH
+          valueFrom:
+            configMapKeyRef:
+              name: hostinfo-springboot-config
+              key: SERVER_SERVLET_CONTEXT_PATH
+        - name: SERVER_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: hostinfo-springboot-config
+              key: SERVER_PORT
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8080
+          initialDelaySeconds: 20
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+      securityContext:
+        fsGroup: 1000
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      terminationGracePeriodSeconds: 30

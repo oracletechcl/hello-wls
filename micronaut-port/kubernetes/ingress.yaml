@@ -1,0 +1,20 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: hostinfo-micronaut
+  namespace: hostinfo-micronaut
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+  - host: wlsoke.alquinta.xyz
+    http:
+      paths:
+      - path: /micronaut
+        pathType: Prefix
+        backend:
+          service:
+            name: hostinfo-micronaut
+            port:
+              number: 8082

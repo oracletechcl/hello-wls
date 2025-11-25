@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hostinfo-micronaut
+  namespace: hostinfo-micronaut
+  labels:
+    app: hostinfo-micronaut
+    version: 1.0.0
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: hostinfo-micronaut
+  template:
+    metadata:
+      labels:
+        app: hostinfo-micronaut
+        version: 1.0.0
+    spec:
+      containers:
+      - name: hostinfo-micronaut
+        # Update with your registry
+        image: docker.io/library/hostinfo-micronaut:1.0.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8082
+          name: http
+          protocol: TCP
+        env:
+        - name: JAVA_OPTS
+          valueFrom:
+            configMapKeyRef:
+              name: hostinfo-micronaut-config
+              key: JAVA_OPTS
+        - name: MICRONAUT_SERVER_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: hostinfo-micronaut-config
+              key: MICRONAUT_SERVER_PORT
+        - name: MICRONAUT_ENVIRONMENTS
+          valueFrom:
+            configMapKeyRef:
+              name: hostinfo-micronaut-config
+              key: MICRONAUT_ENVIRONMENTS
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8082
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8082
+          initialDelaySeconds: 20
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+      securityContext:
+        fsGroup: 1000
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      terminationGracePeriodSeconds: 30
