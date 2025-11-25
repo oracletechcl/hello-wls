@@ -1,0 +1,65 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /hostinfo
+    session:
+      timeout: 30m
+      cookie:
+        name: JSESSIONID
+        http-only: true
+        secure: false
+        max-age: 30m
+
+spring:
+  application:
+    name: hostinfo
+  
+  # Database configuration (mock mode by default)
+  datasource:
+    # For real Oracle ADB, use:
+    # url: jdbc:oracle:thin:@myadb_high?TNS_ADMIN=/wallet/path
+    # username: ADMIN
+    # password: your_password
+    url: ${DB_URL:jdbc:oracle:thin:@localhost:1521/mockdb}
+    username: ${DB_USER:admin}
+    password: ${DB_PASSWORD:password}
+    driver-class-name: oracle.jdbc.OracleDriver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+# Management endpoints (Spring Boot Actuator)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+# Application-specific configuration
+app:
+  database:
+    mock-mode: ${MOCK_MODE:true}
+    service-name: ${DB_SERVICE_NAME:}
+    wallet-location: ${DB_WALLET_LOCATION:}
+
+# Logging configuration
+logging:
+  level:
+    com.oracle.demo: INFO
+    org.springframework: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+
+# SpringDoc OpenAPI (Swagger) configuration
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
