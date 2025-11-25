@@ -10,6 +10,7 @@ IMAGE_NAME="hostinfo"
 IMAGE_TAG="springboot"
 DOCKER_BUILD=false
 DOCKER_COMPOSE_UP=false
+DOCKER_COMPOSE_DOWN=false
 BUILD_JAR=false
 
 # Show help if no arguments provided
@@ -20,6 +21,7 @@ if [ $# -eq 0 ]; then
     echo "  --jar          Build JAR file with Maven"
     echo "  --docker       Build Docker image after Maven build"
     echo "  --compose-up   Start application with docker-compose"
+    echo "  --compose-down Stop application started by docker-compose"
     echo "  --help         Show this help message"
     echo ""
     echo "Examples:"
@@ -46,6 +48,10 @@ while [[ $# -gt 0 ]]; do
             DOCKER_COMPOSE_UP=true
             shift
             ;;
+        --compose-down)
+            DOCKER_COMPOSE_DOWN=true
+            shift
+            ;;
         --help)
             echo "Usage: ./build.sh [OPTIONS]"
             echo ""
@@ -53,6 +59,7 @@ while [[ $# -gt 0 ]]; do
             echo "  --jar          Build JAR file with Maven"
             echo "  --docker       Build Docker image after Maven build"
             echo "  --compose-up   Start application with docker-compose"
+            echo "  --compose-down Stop application started by docker-compose"
             echo "  --help         Show this help message"
             echo ""
             echo "Examples:"
@@ -106,6 +113,41 @@ if [ "$BUILD_JAR" = true ]; then
         echo "================================================"
         exit 1
     fi
+fi
+
+# Stop with docker-compose if requested
+if [ "$DOCKER_COMPOSE_DOWN" = true ]; then
+    echo ""
+    echo "================================================"
+    echo "Stopping Application with Docker Compose"
+    echo "================================================"
+    echo ""
+
+    if command -v podman-compose &> /dev/null; then
+        COMPOSE_CMD="podman-compose"
+    elif docker compose version &> /dev/null 2>&1; then
+        COMPOSE_CMD="docker compose"
+    elif command -v docker-compose &> /dev/null; then
+        COMPOSE_CMD="docker-compose"
+    else
+        echo "ERROR: No compose tool found (podman-compose, docker compose, or docker-compose)"
+        exit 1
+    fi
+
+    echo "Using compose command: ${COMPOSE_CMD}"
+
+    ${COMPOSE_CMD} down
+
+    if [ $? -eq 0 ]; then
+        echo ""
+        echo "Application stopped successfully!"
+        echo ""
+    else
+        echo "ERROR: Failed to stop with docker-compose"
+        exit 1
+    fi
+
+    exit 0
 fi
 
 # Build Docker image if requested
@@ -168,6 +210,8 @@ if [ "$DOCKER_COMPOSE_UP" = true ]; then
     if [ $? -eq 0 ]; then
         echo ""
         echo "Application started successfully!"
+        echo ""
+        echo "🚀 App URL: http://localhost:8080/hostinfo/"
         echo ""
         echo "Access the application at:"
         echo "  http://localhost:8080/hostinfo/"
