@@ -88,7 +88,7 @@ if [ "$BUILD_JAR" = true ]; then
 
     # Clean and build the project
     echo "Running Maven clean package..."
-    mvn clean package -DskipTests
+    mvn clean package
 
     # Check if build was successful
     if [ $? -eq 0 ]; then
