@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   hostinfo:
-    image: hostinfo:latest
+    image: hostinfo:micronaut
     container_name: hostinfo-micronaut
     build:
       context: .

@@ -7,7 +7,7 @@ set -e
 
 APP_NAME="hostinfo"
 IMAGE_NAME="hostinfo"
-IMAGE_TAG="latest"
+IMAGE_TAG="micronaut"
 DOCKER_BUILD=false
 DOCKER_COMPOSE_UP=false
 BUILD_JAR=false

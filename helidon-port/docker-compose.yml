@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   hostinfo:
-    image: hostinfo-helidon:latest
+    image: hostinfo-helidon:helidon
     container_name: hostinfo-helidon-app
     build:
       context: .

@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   hostinfo:
-    image: hostinfo:latest
+    image: hostinfo:springboot
     container_name: hostinfo-app
     build:
       context: .
