@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  hostinfo:
+    image: hostinfo-helidon:latest
+    container_name: hostinfo-helidon-app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_MOCK_MODE=${DB_MOCK_MODE:-true}
+      - DB_URL=${DB_URL:-jdbc:oracle:thin:@localhost:1521/mockdb}
+      - DB_USER=${DB_USER:-ADMIN}
+      - DB_PASSWORD=${DB_PASSWORD:-}
+      - DB_SERVICE_NAME=${DB_SERVICE_NAME:-mock_adb_high}
+      - DB_WALLET_LOCATION=${DB_WALLET_LOCATION:-}
+      - SESSION_TIMEOUT=${SESSION_TIMEOUT:-1800}
+      - JAVA_OPTS=-Xmx512m -Xms256m
+    volumes:
+      # Mount Oracle wallet if using real database
+      - ${WALLET_PATH:-./wallet}:/app/wallet:ro
+    networks:
+      - hostinfo-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  hostinfo-network:
+    driver: bridge

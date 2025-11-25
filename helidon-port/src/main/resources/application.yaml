@@ -1,0 +1,48 @@
+server:
+  port: 8080
+  host: 0.0.0.0
+  features:
+    print-details: true
+
+# Application configuration
+app:
+  name: hostinfo
+  version: 1.0.0
+  description: Helidon MP Host Information Application
+
+  # Session configuration
+  session:
+    max-inactive-interval: ${SESSION_TIMEOUT:1800}  # 30 minutes in seconds
+
+  # Database configuration
+  database:
+    mock-mode: ${DB_MOCK_MODE:true}
+    url: ${DB_URL:jdbc:oracle:thin:@localhost:1521/mockdb}
+    username: ${DB_USER:ADMIN}
+    password: ${DB_PASSWORD:}
+    service-name: ${DB_SERVICE_NAME:mock_adb_high}
+    wallet-location: ${DB_WALLET_LOCATION:}
+    
+    # HikariCP pool settings
+    pool:
+      maximum-pool-size: ${DB_POOL_MAX_SIZE:10}
+      minimum-idle: ${DB_POOL_MIN_SIZE:2}
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+# Health checks
+health:
+  timeout-millis: 10000
+
+# Metrics
+metrics:
+  enabled: true
+
+# OpenAPI configuration
+openapi:
+  web-context: /openapi
+  
+# Tracing (optional)
+tracing:
+  enabled: false
