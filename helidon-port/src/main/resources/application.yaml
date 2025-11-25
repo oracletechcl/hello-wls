@@ -10,6 +10,10 @@ app:
   version: 1.0.0
   description: Helidon MP Host Information Application
 
+  # Session configuration
+  session:
+    max-inactive-interval: ${SESSION_TIMEOUT:1800}  # 30 minutes in seconds
+
   # Database configuration
   database:
     mock-mode: ${DB_MOCK_MODE:true}

@@ -48,6 +48,8 @@ import java.util.Map;
 @Tag(name = "Session Management", description = "APIs for session management")
 public class SessionResource {
 
+    private static final String ERROR_SESSION_NOT_FOUND = "Session not found";
+
     @Inject
     private SessionService sessionService;
 
@@ -107,9 +109,7 @@ public class SessionResource {
             @PathParam("sessionId") String sessionId) {
         SessionInfo session = sessionService.getSession(sessionId);
         if (session == null) {
-            return Response.status(Response.Status.NOT_FOUND)
-                    .entity(Map.of("error", "Session not found", "sessionId", sessionId))
-                    .build();
+            return buildSessionNotFoundResponse(sessionId);
         }
         return Response.ok(session).build();
     }
@@ -150,9 +150,7 @@ public class SessionResource {
         SessionInfo session = sessionService.getSession(sessionId);
         
         if (session == null) {
-            return Response.status(Response.Status.NOT_FOUND)
-                    .entity(Map.of("error", "Session not found"))
-                    .build();
+            return buildSessionNotFoundResponse(sessionId);
         }
         
         return Response.ok(session).build();
@@ -190,9 +188,7 @@ public class SessionResource {
         SessionInfo session = sessionService.getSession(sessionId);
         
         if (session == null) {
-            return Response.status(Response.Status.NOT_FOUND)
-                    .entity(Map.of("error", "Session not found"))
-                    .build();
+            return buildSessionNotFoundResponse(sessionId);
         }
         
         return Response.ok(session).build();
@@ -224,5 +220,17 @@ public class SessionResource {
                 "message", "Session invalidated",
                 "sessionId", sessionId
         )).build();
+    }
+
+    /**
+     * Build a session not found error response
+     * 
+     * @param sessionId The session ID that was not found
+     * @return Response with 404 status and error details
+     */
+    private Response buildSessionNotFoundResponse(String sessionId) {
+        return Response.status(Response.Status.NOT_FOUND)
+                .entity(Map.of("error", ERROR_SESSION_NOT_FOUND, "sessionId", sessionId))
+                .build();
     }
 }

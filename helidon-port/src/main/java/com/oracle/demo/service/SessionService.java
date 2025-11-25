@@ -2,6 +2,8 @@ package com.oracle.demo.service;
 
 import com.oracle.demo.model.SessionInfo;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.net.InetAddress;
 import java.time.Instant;
@@ -9,7 +11,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -32,7 +33,10 @@ import java.util.logging.Logger;
 public class SessionService {
     
     private static final Logger LOGGER = Logger.getLogger(SessionService.class.getName());
-    private static final int DEFAULT_MAX_INACTIVE_INTERVAL = 1800; // 30 minutes
+    
+    @Inject
+    @ConfigProperty(name = "app.session.max-inactive-interval", defaultValue = "1800")
+    private int maxInactiveInterval;
     
     // Simple in-memory session store (for demo purposes)
     // In production, use Redis, database, or JWT tokens
@@ -120,7 +124,7 @@ public class SessionService {
         info.setSessionId(internal.getId());
         info.setCreationTime(internal.getCreationTime().toString());
         info.setLastAccessedTime(internal.getLastAccessedTime().toString());
-        info.setMaxInactiveInterval(DEFAULT_MAX_INACTIVE_INTERVAL);
+        info.setMaxInactiveInterval(maxInactiveInterval);
         info.setNew(isNew);
         info.setVisitCount(internal.getVisitCount());
         info.setUserName(internal.getUserName());
@@ -129,7 +133,7 @@ public class SessionService {
         // Calculate times
         long sessionAge = ChronoUnit.SECONDS.between(internal.getCreationTime(), Instant.now());
         long idleTime = ChronoUnit.SECONDS.between(internal.getLastAccessedTime(), Instant.now());
-        long remainingTime = Math.max(0, DEFAULT_MAX_INACTIVE_INTERVAL - idleTime);
+        long remainingTime = Math.max(0, maxInactiveInterval - idleTime);
         
         info.setSessionAgeSeconds(sessionAge);
         info.setIdleTimeSeconds(idleTime);
