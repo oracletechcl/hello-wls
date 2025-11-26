@@ -24,8 +24,8 @@ spec:
       containers:
       - name: hostinfo-helidon
         # Update with your registry
-        image: docker.io/library/hostinfo-helidon:1.0.0
-        imagePullPolicy: IfNotPresent
+        image: docker.io/dralquinta/hostinfo-helidon:helidon
+        imagePullPolicy: Always
         ports:
         - containerPort: 8081
           name: http

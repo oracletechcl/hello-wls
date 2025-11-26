@@ -20,8 +20,8 @@ spec:
       containers:
       - name: hostinfo-micronaut
         # Update with your registry
-        image: docker.io/library/hostinfo-micronaut:1.0.0
-        imagePullPolicy: IfNotPresent
+        image: docker.io/dralquinta/hostinfo:micronaut
+        imagePullPolicy: Always
         ports:
         - containerPort: 8082
           name: http

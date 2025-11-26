@@ -13,12 +13,19 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-DOCKER_USERNAME="${DOCKER_USERNAME:-}"
+DOCKER_REGISTRY="docker.io"
 DOCKER_IMAGE_NAME="hostinfo"
 DOCKER_IMAGE_TAG="springboot"
 APP_NAME="hostinfo-springboot"
 APP_NAMESPACE="hostinfo-springboot"
 KUBERNETES_DIR="./kubernetes"
+
+# Auto-load Docker credentials from Podman
+get_docker_username() {
+    podman login --get-login "$DOCKER_REGISTRY" 2>/dev/null || echo ""
+}
+
+DOCKER_USERNAME="$(get_docker_username)"
 
 # Functions
 print_header() {
@@ -90,22 +97,14 @@ push_image() {
     print_header "Pushing Image to DockerHub"
     
     if [ -z "$DOCKER_USERNAME" ]; then
-        print_error "DOCKER_USERNAME environment variable is required"
-        print_info "Set it with: export DOCKER_USERNAME=yourname"
-        exit 1
-    fi
-    
-    if [ -z "$DOCKER_PASSWORD" ]; then
-        print_error "DOCKER_PASSWORD environment variable is required"
-        print_info "Set it with: export DOCKER_PASSWORD=yourpassword"
+        print_error "No DockerHub credentials found in Podman"
+        print_info "Please login to DockerHub first: podman login docker.io"
         exit 1
     fi
     
     IMAGE_FULL_NAME="${DOCKER_USERNAME}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}"
     
-    print_info "Logging in to DockerHub..."
-    echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-    
+    print_info "Using stored Podman credentials for: $DOCKER_USERNAME"
     print_info "Tagging image as: $IMAGE_FULL_NAME"
     docker tag ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG} ${IMAGE_FULL_NAME}
     
@@ -229,22 +228,17 @@ Commands:
     --status                    Show deployment status
     --help                      Show this help message
 
-Environment Variables:
-    DOCKER_USERNAME             DockerHub username (required for --push and --oke)
-    DOCKER_PASSWORD             DockerHub password (required for --push and --oke)
+Note: Credentials are automatically loaded from Podman's stored login.
+      If not authenticated, run: podman login docker.io
 
 Examples:
     # Build Docker image
     $0 --build
 
-    # Push to DockerHub
-    export DOCKER_USERNAME=myusername
-    export DOCKER_PASSWORD=mypassword
+    # Push to DockerHub (uses stored credentials)
     $0 --push
 
-    # Full deployment to OKE
-    export DOCKER_USERNAME=myusername
-    export DOCKER_PASSWORD=mypassword
+    # Full deployment to OKE (uses stored credentials)
     $0 --oke
 
     # Deploy using existing image

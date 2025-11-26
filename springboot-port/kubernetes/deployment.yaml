@@ -24,8 +24,8 @@ spec:
       containers:
       - name: hostinfo-springboot
         # Update with your registry
-        image: docker.io/library/hostinfo-springboot:1.0.0
-        imagePullPolicy: IfNotPresent
+        image: docker.io/dralquinta/hostinfo:springboot
+        imagePullPolicy: Always
         ports:
         - containerPort: 8080
           name: http
