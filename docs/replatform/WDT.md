@@ -1,5 +1,28 @@
 # WebLogic Deploy Tooling (WDT) - Complete Demo Guide
 
+## Table of Contents
+
+1. [Overview](#overview)
+2. [Prerequisites](#prerequisites)
+3. [Step 1: Install WebLogic Deploy Tooling](#step-1-install-weblogic-deploy-tooling)
+4. [Step 2: Discover Existing Domain](#step-2-discover-existing-domain)
+5. [Step 3: Examine Discovery Artifacts](#step-3-examine-discovery-artifacts)
+6. [Step 4: Validate the Model](#step-4-validate-the-model)
+7. [Step 5: Create New Domain from Model](#step-5-create-new-domain-from-model)
+8. [Step 6: Start and Verify New Domain](#step-6-start-and-verify-new-domain)
+9. [Advanced Topics](#advanced-topics)
+10. [Troubleshooting](#troubleshooting)
+11. [Script Documentation](#script-documentation)
+    - [Overview](#script-overview)
+    - [Prerequisites](#script-prerequisites)
+    - [Usage](#script-usage)
+    - [Configuration](#script-configuration)
+    - [Features](#script-features)
+    - [Workflow](#script-workflow)
+    - [Troubleshooting](#script-troubleshooting-1)
+12. [Appendix: WDT Model Schema Documentation](#appendix-wdt-model-schema-documentation)
+13. [Conclusion](#conclusion)
+
 ## Overview
 
 This guide provides detailed, step-by-step instructions for using **WebLogic Deploy Tooling (WDT)** to discover, model, and recreate a WebLogic Server 12.2.1.4 domain. This document is designed for demonstration purposes and includes all commands and explanations needed to successfully execute the WDT workflow.
@@ -998,6 +1021,402 @@ EOF
 echo "model.filters.file=$(pwd)/model_filters.json" >> $WDT_HOME/lib/tool.properties
 ```
 
+---
+
+## Script Documentation
+
+This section documents the automated `wdt.sh` script that simplifies the WDT workflow described in this guide.
+
+### Script Overview
+
+The `wdt.sh` script is a comprehensive automation tool that performs the complete WDT workflow:
+- Automatically downloads and installs WDT
+- Discovers an existing WebLogic domain
+- Validates the discovered model
+- Creates a new domain with port offset to avoid conflicts
+- Starts the new domain for verification
+- Provides cleanup capabilities
+
+**Location**: `docs/replatform/wdt.sh`
+
+### Script Prerequisites
+
+#### Environment Configuration File
+
+The script requires a `setWDTEnv.sh` file in the same directory to define persistent environment variables:
+
+**File**: `docs/replatform/setWDTEnv.sh`
+
+```bash
+#!/bin/bash
+# WebLogic Deploy Tooling Environment Configuration
+
+# Oracle Home - WebLogic Server installation directory
+export ORACLE_HOME="/home/opc/wls"
+
+# Java Home - JDK used by WebLogic (must be JDK 1.8 for WLS 12.2.1.4)
+export JAVA_HOME="/opt/jdk"
+
+# Update PATH to include Java and WebLogic binaries
+export PATH="$JAVA_HOME/bin:$ORACLE_HOME/oracle_common/common/bin:$PATH"
+
+# Verification
+echo "Environment configured:"
+echo "  ORACLE_HOME: $ORACLE_HOME"
+echo "  JAVA_HOME: $JAVA_HOME"
+echo "  Java version: $(java -version 2>&1 | head -1)"
+```
+
+This file is automatically sourced by `wdt.sh` on startup.
+
+#### System Requirements
+
+- **WebLogic Server**: 12.2.1.4 installed at `/home/opc/wls`
+- **Java**: JDK 1.8 at `/opt/jdk`
+- **Source Domain**: Existing domain at `/home/opc/wls/user_projects/domains/base_domain`
+- **Disk Space**: Minimum 500MB for WDT artifacts and new domain
+- **Network**: Internet access to download WDT from GitHub
+
+### Script Usage
+
+#### Basic Execution
+
+```bash
+# Navigate to the script directory
+cd /path/to/hello-wls/docs/replatform
+
+# Make the script executable (first time only)
+chmod +x wdt.sh
+
+# Run the complete WDT workflow
+./wdt.sh
+```
+
+#### Command-Line Options
+
+| Option | Description |
+|--------|-------------|
+| `-h, --help` | Display help message and usage information |
+| `-r, --reset` | Reset environment - delete created domain and all WDT artifacts |
+
+#### Examples
+
+```bash
+# Show help and usage information
+./wdt.sh --help
+
+# Reset environment (clean up everything)
+./wdt.sh --reset
+
+# Normal execution (discover, validate, create, start)
+./wdt.sh
+```
+
+### Script Configuration
+
+#### Key Variables
+
+The script uses the following configuration (defined in the script header):
+
+```bash
+# WDT Configuration
+WDT_VERSION="4.3.8"                    # WDT version to download
+WDT_WORK_DIR="$SCRIPT_DIR/wdt-output"  # Output directory for all artifacts
+
+# Source Domain
+SOURCE_DOMAIN_HOME="/home/opc/wls/user_projects/domains/base_domain"
+DOMAIN_NAME="base_domain"
+
+# New Domain
+NEW_DOMAIN_NAME="wdt-sample-domain"    # Name of the created domain
+NEW_DOMAIN_PARENT="$WDT_WORK_DIR/domains"
+NEW_DOMAIN_HOME="$NEW_DOMAIN_PARENT/$NEW_DOMAIN_NAME"
+
+# Admin Credentials (for new domain)
+ADMIN_USER="weblogic"
+ADMIN_PASS="Welcome1"
+```
+
+#### Port Offset Strategy
+
+The script implements a **+1000 port offset** to avoid conflicts with the source domain:
+
+| Server | Original Port | New Port |
+|--------|--------------|----------|
+| AdminServer | 7001 | **8001** |
+| SSL Port | 7002 | **8002** |
+| Managed Server 1 | 7003 | **8003** |
+| Additional Ports | 7004, 7005, etc. | **8004, 8005**, etc. |
+
+This ensures the new domain can run simultaneously with the source domain without port conflicts.
+
+### Script Features
+
+#### 1. Automatic Environment Setup
+
+- Sources `setWDTEnv.sh` for environment variables
+- Validates ORACLE_HOME and JAVA_HOME
+- Checks source domain existence
+- Creates output directory structure
+
+#### 2. WDT Installation
+
+- Downloads WDT version 4.3.8 from GitHub releases
+- Skips download if already present
+- Extracts to `wdt-output/weblogic-deploy/`
+- Validates installation completeness
+
+#### 3. Domain Discovery
+
+- Discovers the source domain using WDT `discoverDomain.sh`
+- Creates model file: `wdt-output/base_domain_model.yaml`
+- Creates archive file: `wdt-output/base_domain_archive.zip`
+- Creates variable file: `wdt-output/base_domain_variables.properties`
+- **Applies port offset** immediately after discovery:
+  - Sets AdminServer to port 8001
+  - Adds 1000 to all other discovered ports
+
+#### 4. Model Validation
+
+- Validates the discovered model using `validateModel.sh`
+- Checks model syntax and structure
+- Verifies variable substitutions
+- Reports validation errors (if any)
+
+#### 5. Domain Creation
+
+- Creates new domain from the modified model
+- Uses temporary variable file for admin credentials
+- Creates domain at `wdt-output/domains/wdt-sample-domain/`
+- Preserves all configurations from source domain
+
+#### 6. Domain Startup
+
+- Checks for port conflicts before starting
+- Starts AdminServer in background mode
+- Monitors startup logs for readiness
+- Detects and reports startup issues
+- Displays console access URL
+
+#### 7. Reset Functionality
+
+The `--reset` option provides complete cleanup:
+
+```bash
+./wdt.sh --reset
+```
+
+**Reset Actions:**
+1. Finds all WebLogic processes for `wdt-sample-domain`
+2. Force kills all domain-related processes
+3. Removes the created domain directory
+4. Removes the entire `wdt-output` directory
+5. Provides summary of cleanup actions
+
+**Use Cases:**
+- Start fresh after testing
+- Clean up failed runs
+- Remove all artifacts before re-running
+- Resolve port conflicts or stuck processes
+
+### Script Workflow
+
+#### Phase 1: Initialization
+
+1. Load environment variables from `setWDTEnv.sh`
+2. Parse command-line arguments
+3. Handle reset mode (if `--reset` specified)
+4. Validate prerequisites (ORACLE_HOME, source domain)
+5. Create output directory structure
+
+#### Phase 2: WDT Installation
+
+1. Check if WDT already exists
+2. Download WDT 4.3.8 if needed
+3. Extract to `wdt-output/weblogic-deploy/`
+4. Verify installation
+
+#### Phase 3: Domain Discovery
+
+1. Execute WDT `discoverDomain.sh`
+2. Generate model, archive, and variable files
+3. **Apply port offset transformation:**
+   - Use `sed` to set AdminServer ListenPort to 8001
+   - Use `awk` to add 1000 to all other ListenPort values
+4. Save modified model
+
+#### Phase 4: Model Validation
+
+1. Execute WDT `validateModel.sh`
+2. Check for errors or warnings
+3. Report validation results
+
+#### Phase 5: Domain Creation
+
+1. Create temporary variable file with admin credentials
+2. Execute WDT `createDomain.sh`
+3. Create domain at `wdt-output/domains/wdt-sample-domain/`
+4. Clean up temporary files
+
+#### Phase 6: Domain Startup
+
+1. Check for port conflicts (port 8001)
+2. Start AdminServer using `startWebLogic.sh`
+3. Monitor `wdt-sample-domain_admin.log`
+4. Detect server ready state
+5. Display access information
+
+#### Phase 7: Summary
+
+1. Display all artifact locations
+2. Show console access URL
+3. Provide admin credentials
+4. Note port offset information
+
+### Script Troubleshooting
+
+#### Common Issues
+
+**Issue**: Script fails with "ORACLE_HOME not set"
+```bash
+# Solution: Ensure setWDTEnv.sh exists and has correct paths
+cat docs/replatform/setWDTEnv.sh
+```
+
+**Issue**: Port 8001 already in use
+```bash
+# Check what's using the port
+sudo lsof -i :8001
+
+# Use reset to clean up
+./wdt.sh --reset
+```
+
+**Issue**: Domain fails to start
+```bash
+# Check the startup log
+tail -f wdt-output/domains/wdt-sample-domain/servers/AdminServer/logs/wdt-sample-domain_admin.log
+
+# Look for errors in domain log
+tail -f wdt-output/domains/wdt-sample-domain/servers/AdminServer/logs/AdminServer.log
+```
+
+**Issue**: WDT download fails (404 error)
+```bash
+# Verify the download URL is accessible
+wget --spider https://github.com/oracle/weblogic-deploy-tooling/releases/download/release-4.3.8/weblogic-deploy.zip
+
+# Check GitHub releases page for available versions
+# https://github.com/oracle/weblogic-deploy-tooling/releases
+```
+
+**Issue**: Application not found during discovery
+```bash
+# Ensure the hostinfo.war symlink exists
+ls -la /home/opc/DevOps/hello-wls/target/hostinfo.war
+
+# Create if missing
+mkdir -p /home/opc/DevOps/hello-wls/target
+ln -s /path/to/actual/hostinfo.war /home/opc/DevOps/hello-wls/target/hostinfo.war
+```
+
+#### Reset and Retry
+
+If the script encounters issues:
+
+```bash
+# Clean everything
+./wdt.sh --reset
+
+# Verify source domain is running
+$ORACLE_HOME/user_projects/domains/base_domain/bin/stopWebLogic.sh
+$ORACLE_HOME/user_projects/domains/base_domain/bin/startWebLogic.sh
+
+# Run script again
+./wdt.sh
+```
+
+#### Log Locations
+
+| Log Type | Location |
+|----------|----------|
+| Domain Admin Log | `wdt-output/domains/wdt-sample-domain/servers/AdminServer/logs/wdt-sample-domain_admin.log` |
+| Server Log | `wdt-output/domains/wdt-sample-domain/servers/AdminServer/logs/AdminServer.log` |
+| Access Log | `wdt-output/domains/wdt-sample-domain/servers/AdminServer/logs/access.log` |
+| Discovery Output | Console output during discovery phase |
+| Validation Output | Console output during validation phase |
+
+### Script Output Structure
+
+After successful execution, the `wdt-output/` directory contains:
+
+```
+wdt-output/
+├── weblogic-deploy/              # WDT installation
+│   ├── bin/                      # WDT tools
+│   ├── lib/                      # WDT libraries
+│   └── samples/                  # Sample models
+├── models/                       # Discovered models (from logs)
+├── base_domain_model.yaml        # Discovered model (modified with port offset)
+├── base_domain_archive.zip       # Application binaries
+├── base_domain_variables.properties  # Configuration variables
+├── .wdt_passphrase              # Password encryption key
+└── domains/
+    └── wdt-sample-domain/        # Created domain
+        ├── bin/                  # Domain scripts
+        ├── config/               # Domain configuration
+        ├── servers/              # Server instances
+        │   └── AdminServer/
+        │       └── logs/         # Server logs
+        └── autodeploy/           # Auto-deploy directory
+```
+
+### Best Practices
+
+1. **Always use reset before re-running**: Ensures clean state
+   ```bash
+   ./wdt.sh --reset && ./wdt.sh
+   ```
+
+2. **Verify source domain is accessible**: Script needs read access
+   ```bash
+   ls -la /home/opc/wls/user_projects/domains/base_domain
+   ```
+
+3. **Monitor logs during startup**: Catch issues early
+   ```bash
+   tail -f wdt-output/domains/wdt-sample-domain/servers/AdminServer/logs/wdt-sample-domain_admin.log
+   ```
+
+4. **Keep setWDTEnv.sh updated**: If paths change, update the environment file
+
+5. **Document customizations**: If you modify the model, document your changes
+
+6. **Test external access**: Configure firewall if needed
+   ```bash
+   sudo firewall-cmd --permanent --add-port=8001/tcp
+   sudo firewall-cmd --reload
+   ```
+
+### Integration with CI/CD
+
+The script is designed for automation and can be integrated into CI/CD pipelines:
+
+```bash
+# In your Jenkins/GitLab pipeline
+- name: Reset WDT Environment
+  run: ./docs/replatform/wdt.sh --reset
+
+- name: Run WDT Workflow
+  run: ./docs/replatform/wdt.sh
+
+- name: Verify Domain
+  run: |
+    curl -f http://localhost:8001/console || exit 1
+```
+
+---
+
 ## Conclusion
 
 This guide provides a comprehensive walkthrough for using WebLogic Deploy Tooling with your WebLogic Server 12.2.1.4 domain. By following these steps, you can:
@@ -1055,3 +1474,235 @@ Before running your demo, ensure:
 **Estimated Demo Time**: 30-45 minutes for complete workflow
 
 Good luck with your WebLogic Deploy Tooling demonstration! 🚀
+
+---
+
+## Appendix: WDT Model Schema Documentation
+
+### Overview
+
+When working with WDT YAML model files, you may need to understand all available configuration options beyond the basics covered in this guide. WDT provides a built-in tool called **Model Help** that serves as the authoritative reference for the complete schema.
+
+### The Model Help Tool
+
+WDT includes `modelHelp.sh` (or `modelHelp.cmd` on Windows) in the `bin/` directory. This tool provides interactive access to the complete model schema, including:
+
+- All available model sections and folders
+- Attribute names, types, and descriptions
+- Default values and valid value ranges
+- WebLogic MBean documentation
+- Nested folder structures
+
+The model schema is based on the WebLogic Server WLST offline structure (version 12.2.1.3+) with simplified paths and enhanced organization.
+
+### Using the Model Help Tool
+
+#### Basic Usage
+
+```bash
+# Navigate to your WDT installation
+cd $WDT_HOME/bin
+
+# Show top-level model sections
+./modelHelp.sh -oracle_home $ORACLE_HOME top
+
+# Output:
+# domainInfo
+# topology
+# resources
+# appDeployments
+# kubernetes
+```
+
+#### Exploring Model Sections
+
+```bash
+# Show contents of a specific section
+./modelHelp.sh -oracle_home $ORACLE_HOME topology
+
+# Show details of a specific folder
+./modelHelp.sh -oracle_home $ORACLE_HOME topology:/Server
+
+# Show nested folder details
+./modelHelp.sh -oracle_home $ORACLE_HOME resources:/JDBCSystemResource/JdbcResource/JDBCDriverParams
+```
+
+#### Interactive Mode
+
+```bash
+# Launch interactive mode (no path argument)
+./modelHelp.sh -oracle_home $ORACLE_HOME
+
+# Interactive prompt allows navigation:
+# > ls               # List current location contents
+# > cd Server        # Navigate to Server folder
+# > attributes       # Show all attributes
+# > help             # Show available commands
+```
+
+#### Recursive Listing
+
+```bash
+# Show all nested folders and attributes
+./modelHelp.sh -oracle_home $ORACLE_HOME -recursive topology:/Server
+
+# Output includes:
+# - All folder attributes
+# - All nested folders
+# - Complete object hierarchy
+```
+
+### Model Structure Overview
+
+#### Top-Level Sections
+
+1. **domainInfo**: Domain metadata and WebLogic version information
+   - Domain name, version, admin credentials placeholder
+
+2. **topology**: Domain structure and server configuration
+   - Servers, Clusters, Machines, Templates
+   - Security configuration
+   - Network channels and listen addresses
+
+3. **resources**: Shared resources and services
+   - JDBC data sources
+   - JMS resources
+   - Work Managers
+   - Foreign JNDI providers
+
+4. **appDeployments**: Application and library deployments
+   - Applications, libraries, coherence clusters
+   - Deployment targets and configuration
+
+5. **kubernetes**: Kubernetes-specific configuration (WebLogic Kubernetes Operator)
+   - Scaling, monitoring, and cloud-native settings
+
+### Common Use Cases
+
+#### Finding Server Configuration Options
+
+```bash
+# Explore all Server attributes
+./modelHelp.sh -oracle_home $ORACLE_HOME topology:/Server
+
+# Example attributes you'll see:
+# ListenPort: integer (default: 7001)
+# ListenAddress: string
+# Machine: reference to topology:/Machine
+# Cluster: reference to topology:/Cluster
+# SSL: folder (nested SSL configuration)
+```
+
+#### Exploring JDBC DataSource Options
+
+```bash
+# Show JDBC resource structure
+./modelHelp.sh -oracle_home $ORACLE_HOME resources:/JDBCSystemResource
+
+# Show connection pool options
+./modelHelp.sh -oracle_home $ORACLE_HOME -recursive resources:/JDBCSystemResource/JdbcResource/JDBCConnectionPoolParams
+```
+
+#### Understanding Security Configuration
+
+```bash
+# Explore security realm options
+./modelHelp.sh -oracle_home $ORACLE_HOME topology:/SecurityConfiguration/Realm
+```
+
+### Token Reference
+
+WDT supports variable substitution using tokens in your model files. The Model Help tool documents token syntax:
+
+| Token Type | Syntax | Description | Example |
+|------------|--------|-------------|---------|
+| Property | `@@PROP:key@@` | Java system property | `@@PROP:user.home@@` |
+| Environment | `@@ENV:VAR@@` | Environment variable | `@@ENV:ORACLE_HOME@@` |
+| File | `@@FILE:path@@` | File contents | `@@FILE:/tmp/secret.txt@@` |
+| Secret | `@@SECRET:key@@` | Encrypted secret | `@@SECRET:db.password@@` |
+| Built-in | `@@WL_HOME@@` | WebLogic home directory | `@@WL_HOME@@` |
+| Built-in | `@@DOMAIN_HOME@@` | Domain home directory | `@@DOMAIN_HOME@@` |
+| Built-in | `@@JAVA_HOME@@` | Java home directory | `@@JAVA_HOME@@` |
+| Built-in | `@@ORACLE_HOME@@` | Oracle home directory | `@@ORACLE_HOME@@` |
+| Built-in | `@@PWD@@` | Current working directory | `@@PWD@@` |
+| Built-in | `@@TMP@@` | System temp directory | `@@TMP@@` |
+
+### Example: Customizing Your Model
+
+After using Model Help to discover available options, you can enhance your model. For example:
+
+```yaml
+topology:
+  ServerTemplate:
+    AdminServer:
+      ListenPort: 8001
+      ListenAddress: "0.0.0.0"  # Found using modelHelp
+      ServerStart:                # Found using modelHelp
+        Arguments: "-Xms512m -Xmx1024m"
+        ClassPath: "@@DOMAIN_HOME@@/lib/custom.jar"
+      SSL:                        # Found using modelHelp
+        Enabled: true
+        ListenPort: 8002
+      Log:                        # Found using modelHelp
+        FileName: "logs/AdminServer.log"
+        RotationType: "bySize"
+        FileMinSize: 5000
+        NumberOfFilesLimited: true
+        FileCount: 10
+```
+
+### Practical Workflow
+
+1. **Discover your domain** to get the baseline model:
+   ```bash
+   ./wdt.sh  # Uses the automated script from this guide
+   ```
+
+2. **Review the generated model** at `wdt-output/models/base_domain_model.yaml`
+
+3. **Explore additional options** using Model Help:
+   ```bash
+   cd wdt-output/weblogic-deploy/bin
+   ./modelHelp.sh -oracle_home $ORACLE_HOME topology:/Server
+   ```
+
+4. **Enhance your model** with discovered options:
+   - Add JVM arguments
+   - Configure SSL settings
+   - Set up custom logging
+   - Define additional data sources
+
+5. **Validate the updated model**:
+   ```bash
+   cd wdt-output/weblogic-deploy/bin
+   ./validateModel.sh -oracle_home $ORACLE_HOME \
+       -model_file ../../models/base_domain_model.yaml
+   ```
+
+6. **Create domain** with the enhanced model using the script
+
+### Tips for Using Model Help
+
+1. **Start broad, then narrow**: Begin with `top`, then drill down to specific sections
+2. **Use recursive mode** to see the complete structure at once
+3. **Reference MBean docs**: Model Help output includes links to WebLogic MBean documentation
+4. **Check required vs optional**: The tool indicates which attributes are required
+5. **Validate early**: Always validate your model after making manual changes
+
+### Online Resources
+
+- **Official Model Documentation**: https://oracle.github.io/weblogic-deploy-tooling/concepts/model/
+- **Model Help Tool Guide**: https://oracle.github.io/weblogic-deploy-tooling/userguide/tools/model_help/
+- **Model Token Reference**: https://oracle.github.io/weblogic-deploy-tooling/concepts/model/#model-tokens
+- **WLST Offline Reference**: Oracle WebLogic Server documentation (MBean reference)
+
+### Summary
+
+The Model Help tool is your go-to resource for:
+- ✅ Discovering all available model options
+- ✅ Understanding attribute types and valid values
+- ✅ Exploring nested folder structures
+- ✅ Finding WebLogic MBean documentation
+- ✅ Validating model syntax and structure
+
+Use it whenever you need to customize your WDT models beyond the basic examples in this guide.
