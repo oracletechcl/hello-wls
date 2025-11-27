@@ -47,8 +47,14 @@ Main automation script that performs the complete WDT workflow.
 ```bash
 cd replatform/WDT
 
-# Run complete workflow
-./wdt.sh
+# Run complete workflow (non-interactive by default)
+./wdt.sh -c
+
+# Run with interactive prompts between steps
+./wdt.sh -c --interactive
+
+# Create domain without starting it
+./wdt.sh -c -n
 
 # Reset and clean everything
 ./wdt.sh --reset
@@ -58,6 +64,10 @@ cd replatform/WDT
 ```
 
 **Options**:
+- `-c, --clean`: Clean all WDT artifacts before starting
+- `-n, --no-run`: Create domain but do not start it
+- `--interactive`: Interactive mode (prompt between steps)
+- `--non-interactive`: Non-interactive mode (default, no prompts)
 - `-h, --help`: Display help message
 - `-r, --reset`: Delete created domain and all WDT artifacts
 
@@ -100,7 +110,14 @@ export JAVA_HOME="/your/jdk/installation"
 
 3. **Run the automation script**:
    ```bash
-   ./wdt.sh
+   # Run in non-interactive mode (default)
+   ./wdt.sh -c
+   
+   # Run with interactive prompts between steps
+   ./wdt.sh -c --interactive
+   
+   # Show help and available options
+   ./wdt.sh --help
    ```
 
 4. **Monitor the process**:

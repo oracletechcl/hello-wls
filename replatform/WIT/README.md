@@ -42,10 +42,20 @@ This script sets:
 
 ### 2. Run WIT Automation
 
-Execute the main automation script:
+Execute the main automation script with a domain type:
 
 ```bash
-./wit.sh
+# Run with Model-in-Image (recommended for Kubernetes) - non-interactive by default
+./wit.sh --mii
+
+# Run with Domain-in-Image - non-interactive by default
+./wit.sh --dii
+
+# Run with interactive prompts between steps
+./wit.sh --dii --interactive
+
+# Show help
+./wit.sh --help
 ```
 
 The script will:
@@ -115,17 +125,20 @@ This will:
 - Delete the `wit-output` directory
 - Clear the WIT cache (`~/.imagetool-cache`)
 
-### Non-Interactive Mode
+### Interactive Mode
 
-Run the script without prompts for automated execution:
+By default, the script runs in non-interactive mode (no prompts). To enable interactive prompts between steps:
 
 ```bash
-./wit.sh -y
-# or
-./wit.sh --yes
+./wit.sh --dii --interactive
 ```
 
-This is useful for:
+Interactive mode is useful for:
+- Learning and exploring the WIT workflow
+- Reviewing output at each step
+- Manual verification and troubleshooting
+
+Non-interactive mode (default) is useful for:
 - CI/CD pipelines
 - Automated builds
 - Testing scenarios

@@ -59,6 +59,7 @@ ADMIN_PASS="Welcome1"
 CLEAN_MODE=false
 RESET_MODE=false
 NO_RUN_MODE=false
+INTERACTIVE_MODE=false  # Non-interactive by default (can be enabled with --interactive)
 
 ################################################################################
 # Helper Functions
@@ -152,11 +153,9 @@ print_command() {
 }
 
 pause_for_review() {
-    if [ -t 0 ]; then
+    if [ "$INTERACTIVE_MODE" = true ] && [ -t 0 ]; then
         echo -e "\n${YELLOW}Press Enter to continue...${NC}"
         read -r
-    else
-        sleep 2
     fi
 }
 
@@ -852,9 +851,11 @@ ${BOLD}USAGE:${NC}
     $0 [OPTIONS]
 
 ${BOLD}OPTIONS:${NC}
-    -c, --clean     Clean all WDT artifacts before starting (idempotent reset)
-    -n, --no-run    Create domain but do not start it
-    -h, --help      Display this help message
+    -c, --clean          Clean all WDT artifacts before starting (idempotent reset)
+    -n, --no-run         Create domain but do not start it
+    --interactive        Interactive mode (prompt between steps)
+    --non-interactive    Non-interactive mode (default, no prompts)
+    -h, --help           Display this help message
 
 ${BOLD}DESCRIPTION:${NC}
     This script automates the WebLogic Deploy Tooling workflow documented in WDT.md.
@@ -915,6 +916,14 @@ main() {
                 ;;
             -n|--no-run)
                 NO_RUN_MODE=true
+                shift
+                ;;
+            --interactive)
+                INTERACTIVE_MODE=true
+                shift
+                ;;
+            --non-interactive)
+                INTERACTIVE_MODE=false
                 shift
                 ;;
             -h|--help)

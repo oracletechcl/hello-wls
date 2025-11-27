@@ -77,7 +77,7 @@ WDT_DOMAIN_HOME="/u01/domains/base_domain"  # For Domain-in-Image
 CLEAN_MODE=false
 DOMAIN_TYPE="mii"  # Model-in-Image (default)
 PUSH_TO_OCIR=true  # Push images to OCIR by default
-INTERACTIVE_MODE=true  # Wait for user input between steps
+INTERACTIVE_MODE=false  # Non-interactive by default (can be enabled with --interactive)
 
 ################################################################################
 # Helper Functions
@@ -717,12 +717,13 @@ show_help() {
     echo "Usage: $0 [options]"
     echo ""
     echo "Options:"
-    echo "  -c, --clean     Clean all WIT artifacts before starting"
-    echo "  --mii           Create Model-in-Image (default)"
-    echo "  --dii           Create Domain-in-Image"
-    echo "  --no-push       Skip pushing images to OCIR"
-    echo "  -y, --yes       Non-interactive mode (skip prompts)"
-    echo "  -h, --help      Display this help message"
+    echo "  -c, --clean          Clean all WIT artifacts before starting"
+    echo "  --mii                Create Model-in-Image (default)"
+    echo "  --dii                Create Domain-in-Image"
+    echo "  --no-push            Skip pushing images to OCIR"
+    echo "  --interactive        Interactive mode (prompt between steps)"
+    echo "  --non-interactive    Non-interactive mode (default, no prompts)"
+    echo "  -h, --help           Display this help message"
     echo ""
     echo "Domain Types:"
     echo "  Model-in-Image (mii)   - WDT model in image, domain created at runtime (K8s)"
@@ -777,7 +778,11 @@ main() {
                 PUSH_TO_OCIR=false
                 shift
                 ;;
-            -y|--yes)
+            --interactive)
+                INTERACTIVE_MODE=true
+                shift
+                ;;
+            --non-interactive)
                 INTERACTIVE_MODE=false
                 shift
                 ;;

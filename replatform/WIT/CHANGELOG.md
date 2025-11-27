@@ -1,10 +1,10 @@
-# WIT Script Changes - OCIR Integration
+# WIT Script Changes - OCIR Integration & Interactive Mode
 
 ## Date: November 27, 2025
 
 ### Summary
 
-Added automatic OCIR (Oracle Cloud Infrastructure Registry) push functionality to the WIT automation script, enabling seamless image distribution to Oracle Cloud.
+Added automatic OCIR (Oracle Cloud Infrastructure Registry) push functionality to the WIT automation script, enabling seamless image distribution to Oracle Cloud. Updated both WIT and WDT scripts to run in non-interactive mode by default, with an optional `--interactive` flag for step-by-step execution.
 
 ### Key Changes
 
@@ -154,12 +154,19 @@ wait_for_input() {
     ;;
 ```
 
-#### 7. New Command Line Flags
+#### 7. Interactive Mode Updates (Latest Change)
 
-Added two new flags:
+**Changed Default Behavior:**
+- Scripts now run in **non-interactive mode by default** (no prompts between steps)
+- Better suited for CI/CD pipelines and automated execution
 
+**New Flags:**
+- `--interactive` - Enable interactive mode with prompts between steps (old default behavior)
+- `--non-interactive` - Explicitly specify non-interactive mode (now the default)
 - `--no-push` - Skip OCIR push entirely
-- `-y` / `--yes` - Run in non-interactive mode (skip prompts)
+
+**Removed Flags:**
+- Renamed `-y` / `--yes` to `--non-interactive` for clarity
 
 ### Images Pushed to OCIR
 
@@ -179,14 +186,19 @@ After these changes, the script pushes three images to OCIR:
 
 ### Usage Examples
 
-**Automated DII build with OCIR push:**
+**DII build with OCIR push (non-interactive, default):**
 ```bash
-./wit.sh --dii -y
+./wit.sh --dii
 ```
 
-**MII build with OCIR push:**
+**MII build with OCIR push (non-interactive):**
 ```bash
-./wit.sh --mii -y
+./wit.sh --mii
+```
+
+**Interactive mode with prompts between steps:**
+```bash
+./wit.sh --dii --interactive
 ```
 
 **Build without OCIR push:**
@@ -194,9 +206,9 @@ After these changes, the script pushes three images to OCIR:
 ./wit.sh --dii --no-push
 ```
 
-**Interactive mode (default):**
+**Explicit non-interactive mode:**
 ```bash
-./wit.sh --dii
+./wit.sh --dii --non-interactive
 ```
 
 ### Authentication
@@ -235,36 +247,54 @@ See [OCIR_LOGIN.md](OCIR_LOGIN.md) for detailed authentication instructions.
    - Added `push_to_ocir()` function
    - Modified image creation functions to include push
    - Added push logic to "image exists" checks
-   - Added `INTERACTIVE_MODE` flag
-   - Modified `wait_for_input()` function
-   - Added `-y` / `--yes` command line option
+   - Changed default `INTERACTIVE_MODE` to `false`
+   - Modified `wait_for_input()` function to check interactive flag
+   - Added `--interactive` and `--non-interactive` command line options
+   - Removed check for no arguments (allows running with defaults)
 
-2. **replatform/WIT/README.md**
-   - Added non-interactive mode documentation
-   - Updated OCIR configuration section
+2. **replatform/WDT/wdt.sh**
+   - Changed default `INTERACTIVE_MODE` to `false`
+   - Modified `pause_for_review()` function to check interactive flag
+   - Added `--interactive` and `--non-interactive` command line options
+   - Removed check for no arguments (allows running with defaults)
 
-3. **replatform/WIT/OCIR_LOGIN.md**
+3. **replatform/WIT/README.md**
+   - Updated Quick Start examples to show new default behavior
+   - Changed "Non-Interactive Mode" section to "Interactive Mode"
+   - Updated all usage examples with new flag names
+
+4. **replatform/WDT/README.md**
+   - Updated usage examples with new flag names
+   - Updated Quick Start section
+   - Documented new default non-interactive behavior
+
+5. **replatform/WIT/OCIR_LOGIN.md**
    - Updated with correct namespace (idi1o0a010nx)
    - Updated username format documentation
 
 ### Behavior Changes
 
-**Before:**
+**Before (Original):**
 - No OCIR integration
 - Images only available locally
 - Manual tagging and pushing required
+- Interactive mode by default with prompts
+- Required `-y` flag for automation
 
-**After:**
+**After (Current):**
 - Automatic OCIR push for all scenarios
 - Images automatically available in Oracle Cloud
 - Push happens even when images already exist
-- Non-interactive mode for automation
+- **Non-interactive mode by default** (no prompts)
+- Optional `--interactive` flag for step-by-step execution
 - Proper authentication detection
+- Suitable for both CI/CD automation and manual learning
 
 ### Next Steps
 
 Users can now:
-1. Build and push images with a single command
+1. Build and push images with a single command (no prompts by default)
 2. Use OCIR images in Kubernetes deployments
-3. Integrate script into CI/CD pipelines with `-y` flag
-4. Deploy to OKE (Oracle Kubernetes Engine) using OCIR images
+3. Run scripts directly in CI/CD pipelines without special flags
+4. Use `--interactive` flag when learning or troubleshooting
+5. Deploy to OKE (Oracle Kubernetes Engine) using OCIR images
