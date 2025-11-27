@@ -1027,6 +1027,24 @@ echo "model.filters.file=$(pwd)/model_filters.json" >> $WDT_HOME/lib/tool.proper
 
 This section documents the automated `wdt.sh` script that simplifies the WDT workflow described in this guide.
 
+### Directory Structure
+
+All WDT-related scripts are organized under the `WDT/` subdirectory:
+
+```
+docs/replatform/
+├── WDT.md                    # This documentation file
+├── WDT/                      # WDT scripts directory
+│   ├── wdt.sh               # Main automation script
+│   └── setWDTEnv.sh         # Environment configuration
+└── wdt-output/               # Generated artifacts (created by script)
+    ├── weblogic-deploy/     # WDT installation
+    ├── base_domain_model.yaml
+    ├── base_domain_archive.zip
+    └── domains/
+        └── wdt-sample-domain/
+```
+
 ### Script Overview
 
 The `wdt.sh` script is a comprehensive automation tool that performs the complete WDT workflow:
@@ -1037,7 +1055,7 @@ The `wdt.sh` script is a comprehensive automation tool that performs the complet
 - Starts the new domain for verification
 - Provides cleanup capabilities
 
-**Location**: `docs/replatform/wdt.sh`
+**Location**: `docs/replatform/WDT/wdt.sh`
 
 ### Script Prerequisites
 
@@ -1045,7 +1063,7 @@ The `wdt.sh` script is a comprehensive automation tool that performs the complet
 
 The script requires a `setWDTEnv.sh` file in the same directory to define persistent environment variables:
 
-**File**: `docs/replatform/setWDTEnv.sh`
+**File**: `docs/replatform/WDT/setWDTEnv.sh`
 
 ```bash
 #!/bin/bash
@@ -1083,7 +1101,7 @@ This file is automatically sourced by `wdt.sh` on startup.
 
 ```bash
 # Navigate to the script directory
-cd /path/to/hello-wls/docs/replatform
+cd /path/to/hello-wls/docs/replatform/WDT
 
 # Make the script executable (first time only)
 chmod +x wdt.sh
@@ -1120,8 +1138,8 @@ The script uses the following configuration (defined in the script header):
 
 ```bash
 # WDT Configuration
-WDT_VERSION="4.3.8"                    # WDT version to download
-WDT_WORK_DIR="$SCRIPT_DIR/wdt-output"  # Output directory for all artifacts
+WDT_VERSION="4.3.8"                       # WDT version to download
+WDT_WORK_DIR="$SCRIPT_DIR/../wdt-output"  # Output directory for all artifacts
 
 # Source Domain
 SOURCE_DOMAIN_HOME="/home/opc/wls/user_projects/domains/base_domain"
@@ -1655,14 +1673,15 @@ topology:
 
 1. **Discover your domain** to get the baseline model:
    ```bash
+   cd docs/replatform/WDT
    ./wdt.sh  # Uses the automated script from this guide
    ```
 
-2. **Review the generated model** at `wdt-output/models/base_domain_model.yaml`
+2. **Review the generated model** at `../wdt-output/models/base_domain_model.yaml`
 
 3. **Explore additional options** using Model Help:
    ```bash
-   cd wdt-output/weblogic-deploy/bin
+   cd ../wdt-output/weblogic-deploy/bin
    ./modelHelp.sh -oracle_home $ORACLE_HOME topology:/Server
    ```
 
@@ -1674,7 +1693,7 @@ topology:
 
 5. **Validate the updated model**:
    ```bash
-   cd wdt-output/weblogic-deploy/bin
+   cd ../wdt-output/weblogic-deploy/bin
    ./validateModel.sh -oracle_home $ORACLE_HOME \
        -model_file ../../models/base_domain_model.yaml
    ```

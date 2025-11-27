@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # WebLogic Cluster Shutdown Script
-# This script gracefully stops all WebLogic servers
+# This script gracefully stops all WebLogic servers and the startup script
 
 # Configuration
 DOMAIN_HOME="/home/opc/wls/user_projects/domains/base_domain"
@@ -14,10 +14,50 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Determine script directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PID_FILE="${SCRIPT_DIR}/.cluster-startup.pid"
+
 echo -e "${BLUE}=========================================${NC}"
 echo -e "${BLUE}WebLogic Cluster Shutdown Script${NC}"
 echo -e "${BLUE}=========================================${NC}"
 echo ""
+
+# Function to stop the startup script itself
+stop_startup_script() {
+    if [ -f "$PID_FILE" ]; then
+        STARTUP_PID=$(cat "$PID_FILE")
+        echo -e "${YELLOW}Found cluster startup script (PID: $STARTUP_PID)${NC}"
+        
+        if ps -p "$STARTUP_PID" > /dev/null 2>&1; then
+            echo -e "${YELLOW}Stopping cluster startup script...${NC}"
+            
+            # Kill the startup script and all its children
+            pkill -P "$STARTUP_PID" 2>/dev/null
+            kill "$STARTUP_PID" 2>/dev/null
+            
+            # Wait briefly
+            sleep 2
+            
+            # Force kill if still running
+            if ps -p "$STARTUP_PID" > /dev/null 2>&1; then
+                echo -e "${RED}Force killing startup script...${NC}"
+                kill -9 "$STARTUP_PID" 2>/dev/null
+            fi
+            
+            echo -e "${GREEN}Cluster startup script stopped${NC}"
+        else
+            echo -e "${YELLOW}Startup script not running (stale PID file)${NC}"
+        fi
+        
+        # Remove PID file
+        rm -f "$PID_FILE"
+        echo ""
+    else
+        echo -e "${YELLOW}No startup script PID file found${NC}"
+        echo ""
+    fi
+}
 
 # Function to find and kill WebLogic processes
 stop_weblogic_processes() {
@@ -83,6 +123,7 @@ stop_weblogic_processes() {
 }
 
 # Main execution
+stop_startup_script
 stop_weblogic_processes
 
 echo ""

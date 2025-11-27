@@ -1,0 +1,36 @@
+WebLogic Image Tool (WIT) - Execution Summary
+==============================================
+
+Execution Date: Thu Nov 27 07:48:08 PM GMT 2025
+WIT Version: 1.16.1
+WIT Home: /home/opc/DevOps/WLS_WORKSHOP/main/hello-wls/replatform/WIT/wit-output/imagetool
+Cache Directory: /home/opc/.imagetool-cache
+Domain Type: Domain-in-Image (dii)
+Domain Home: /u01/domains/base_domain
+
+Installers Used:
+  - WebLogic: /home/opc/DevOps/fmw_12.2.1.4.0_wls_lite_Disk1_1of1.zip
+  - JDK: /home/opc/DevOps/jdk-8u202-linux-x64.tar.gz
+
+Images Created:
+  ✓ wls:12.2.1.4.0 (1.36 GB)
+  ✓ wls-wdt:12.2.1.4.0 (1.37 GB)
+
+Cache Contents:
+Cache contents
+jdk_8u202=/home/opc/DevOps/jdk-8u202-linux-x64.tar.gz
+wls_12.2.1.4.0=/home/opc/DevOps/fmw_12.2.1.4.0_wls_lite_Disk1_1of1.zip
+wdt_4.3.8=/home/opc/DevOps/WLS_WORKSHOP/main/hello-wls/replatform/WIT/./wit-output/weblogic-deploy-4.3.8.zip
+
+All Docker Images:
+REPOSITORY                  TAG         IMAGE ID      CREATED         SIZE
+localhost/wls-wdt           12.2.1.4.0  b97c73ebe46e  58 seconds ago  1.37 GB
+localhost/wls               12.2.1.4.0  f9191ddbe5db  7 minutes ago   1.36 GB
+
+Log File: /home/opc/DevOps/WLS_WORKSHOP/main/hello-wls/replatform/WIT/wit-output/logs/wit_20251127_193544.log
+
+Next Steps:
+  1. Test the image: docker run -d -p 7001:7001 wls:12.2.1.4.0
+  2. Push to registry: docker tag wls:12.2.1.4.0 <registry>/<repo>:tag
+  3. Deploy to Kubernetes using manifests in modernization-ports/*/kubernetes/
+

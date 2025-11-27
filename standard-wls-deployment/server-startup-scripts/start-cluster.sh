@@ -2,7 +2,7 @@
 
 # WebLogic Cluster Startup Script
 # This script starts the Admin Server and Managed Servers (ms1 and ms2)
-# All servers will continue running until the script is terminated (Ctrl+C)
+# Runs in background and can be stopped by stop-cluster.sh
 
 # Configuration
 DOMAIN_HOME="/home/opc/wls/user_projects/domains/base_domain"
@@ -18,8 +18,12 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Log file directory
-LOG_DIR="$(pwd)/logs"
+# Determine script directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Log file directory and PID file
+LOG_DIR="${SCRIPT_DIR}/logs"
+PID_FILE="${SCRIPT_DIR}/.cluster-startup.pid"
 mkdir -p "${LOG_DIR}"
 
 echo -e "${BLUE}=========================================${NC}"
@@ -42,6 +46,19 @@ fi
 if [ ! -f "${MANAGED_SERVER_SCRIPT}" ]; then
     echo -e "${RED}ERROR: Managed server script not found at ${MANAGED_SERVER_SCRIPT}${NC}"
     exit 1
+fi
+
+# Check if already running
+if [ -f "$PID_FILE" ]; then
+    OLD_PID=$(cat "$PID_FILE")
+    if ps -p "$OLD_PID" > /dev/null 2>&1; then
+        echo -e "${YELLOW}Cluster startup script is already running (PID: $OLD_PID)${NC}"
+        echo -e "${YELLOW}Use stop-cluster.sh to stop it first${NC}"
+        exit 1
+    else
+        # Stale PID file, remove it
+        rm -f "$PID_FILE"
+    fi
 fi
 
 # Array to store background process IDs
@@ -73,12 +90,18 @@ cleanup() {
         fi
     done
     
+    # Remove PID file
+    rm -f "$PID_FILE"
+    
     echo -e "${GREEN}All servers stopped.${NC}"
     exit 0
 }
 
 # Trap Ctrl+C and other termination signals
 trap cleanup SIGINT SIGTERM
+
+# Write this script's PID to file
+echo $$ > "$PID_FILE"
 
 # Function to check if a port is listening
 wait_for_port() {
@@ -167,29 +190,39 @@ echo -e "  Admin Server: ${ADMIN_LOG}"
 echo -e "  MS1:          ${MS1_LOG}"
 echo -e "  MS2:          ${MS2_LOG}"
 echo ""
-echo -e "${YELLOW}Servers are now running...${NC}"
-echo -e "${YELLOW}Press Ctrl+C to stop all servers${NC}"
+echo -e "${BLUE}PID File:${NC}"
+echo -e "  ${PID_FILE}"
+echo ""
+echo -e "${YELLOW}Servers are now running in background...${NC}"
+echo -e "${YELLOW}Use stop-cluster.sh to stop all servers${NC}"
+echo -e "${YELLOW}Monitor logs with: tail -f ${LOG_DIR}/*.log${NC}"
 echo ""
 
-# Keep the script running and monitor the processes
-while true; do
-    sleep 10
-    
-    # Check if any process has died
-    for i in "${!PIDS[@]}"; do
-        pid="${PIDS[$i]}"
-        if ! ps -p $pid > /dev/null 2>&1; then
-            case $i in
-                0)
-                    echo -e "${RED}WARNING: Admin Server (PID $pid) has stopped!${NC}"
-                    ;;
-                1)
-                    echo -e "${RED}WARNING: MS1 (PID $pid) has stopped!${NC}"
-                    ;;
-                2)
-                    echo -e "${RED}WARNING: MS2 (PID $pid) has stopped!${NC}"
-                    ;;
-            esac
-        fi
+# Function to run in background
+monitor_processes() {
+    # Keep the script running and monitor the processes
+    while true; do
+        sleep 10
+        
+        # Check if any process has died
+        for i in "${!PIDS[@]}"; do
+            pid="${PIDS[$i]}"
+            if ! ps -p $pid > /dev/null 2>&1; then
+                case $i in
+                    0)
+                        echo "$(date): WARNING: Admin Server (PID $pid) has stopped!" >> "${LOG_DIR}/cluster-monitor.log"
+                        ;;
+                    1)
+                        echo "$(date): WARNING: MS1 (PID $pid) has stopped!" >> "${LOG_DIR}/cluster-monitor.log"
+                        ;;
+                    2)
+                        echo "$(date): WARNING: MS2 (PID $pid) has stopped!" >> "${LOG_DIR}/cluster-monitor.log"
+                        ;;
+                esac
+            fi
+        done
     done
-done
+}
+
+# Run monitor in background
+monitor_processes &

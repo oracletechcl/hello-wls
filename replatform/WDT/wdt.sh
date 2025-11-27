@@ -58,6 +58,7 @@ ADMIN_PASS="Welcome1"
 # Flags
 CLEAN_MODE=false
 RESET_MODE=false
+NO_RUN_MODE=false
 
 ################################################################################
 # Helper Functions
@@ -852,6 +853,7 @@ ${BOLD}USAGE:${NC}
 
 ${BOLD}OPTIONS:${NC}
     -c, --clean     Clean all WDT artifacts before starting (idempotent reset)
+    -n, --no-run    Create domain but do not start it
     -h, --help      Display this help message
 
 ${BOLD}DESCRIPTION:${NC}
@@ -863,7 +865,7 @@ ${BOLD}DESCRIPTION:${NC}
     3. Create model, archive, and variable files
     4. Validate the model
     5. Create a new domain from the model
-    6. Start the new domain
+    6. Start the new domain (skip with --no-run)
 
     All operations are idempotent - the script can be run multiple times safely.
 
@@ -873,6 +875,9 @@ ${BOLD}EXAMPLES:${NC}
 
     # Clean and run fresh
     $0 --clean
+
+    # Create domain without starting it
+    $0 --no-run
 
     # Reset everything (remove created domain and all WDT outputs)
     $0 --reset
@@ -887,7 +892,7 @@ ${BOLD}ENVIRONMENT VARIABLES:${NC}
     ORACLE_HOME     WebLogic installation directory (auto-detected if not set)
     JAVA_HOME       Java JDK directory (auto-detected if not set)
 
-For more information, see: docs/replatform/WDT.md
+For more information, see: replatform/WDT.md
 
 EOF
 }
@@ -906,6 +911,10 @@ main() {
                 ;;
             -r|--reset)
                 RESET_MODE=true
+                shift
+                ;;
+            -n|--no-run)
+                NO_RUN_MODE=true
                 shift
                 ;;
             -h|--help)
@@ -955,7 +964,15 @@ main() {
     validate_model
     create_domain
     verify_domain_creation
-    start_new_domain
+    
+    # Start domain unless --no-run flag is set
+    if [ "$NO_RUN_MODE" = false ]; then
+        start_new_domain
+    else
+        print_info "Skipping domain startup (--no-run flag set)"
+        print_info "To start the domain manually, run:"
+        print_info "  cd $NEW_DOMAIN_HOME && ./startWebLogic.sh"
+    fi
     
     # Display summary
     display_summary
