@@ -1,47 +1,51 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: hostinfo-micronaut
-  namespace: hostinfo-micronaut
+  name: hostinfo-springboot
+  namespace: hostinfo-springboot
   labels:
-    app: hostinfo-micronaut
+    app: hostinfo-springboot
     version: 1.0.0
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: hostinfo-micronaut
+      app: hostinfo-springboot
   template:
     metadata:
       labels:
-        app: hostinfo-micronaut
+        app: hostinfo-springboot
         version: 1.0.0
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/actuator/prometheus"
     spec:
       containers:
-      - name: hostinfo-micronaut
+      - name: hostinfo-springboot
         # Update with your registry
-        image: docker.io/dralquinta/hostinfo:micronaut
+        image: docker.io/dralquinta/hostinfo:springboot
         imagePullPolicy: Always
         ports:
-        - containerPort: 8082
+        - containerPort: 8080
           name: http
           protocol: TCP
         env:
         - name: JAVA_OPTS
           valueFrom:
             configMapKeyRef:
-              name: hostinfo-micronaut-config
+              name: hostinfo-springboot-config
               key: JAVA_OPTS
-        - name: MICRONAUT_SERVER_PORT
+        - name: SERVER_SERVLET_CONTEXT_PATH
           valueFrom:
             configMapKeyRef:
-              name: hostinfo-micronaut-config
-              key: MICRONAUT_SERVER_PORT
-        - name: MICRONAUT_ENVIRONMENTS
+              name: hostinfo-springboot-config
+              key: SERVER_SERVLET_CONTEXT_PATH
+        - name: SERVER_PORT
           valueFrom:
             configMapKeyRef:
-              name: hostinfo-micronaut-config
-              key: MICRONAUT_ENVIRONMENTS
+              name: hostinfo-springboot-config
+              key: SERVER_PORT
         resources:
           requests:
             memory: "256Mi"
@@ -51,16 +55,16 @@ spec:
             cpu: "500m"
         livenessProbe:
           httpGet:
-            path: /health
-            port: 8082
+            path: /hostinfo/actuator/health
+            port: 8080
           initialDelaySeconds: 30
           periodSeconds: 10
           timeoutSeconds: 5
           failureThreshold: 3
         readinessProbe:
           httpGet:
-            path: /health
-            port: 8082
+            path: /hostinfo/actuator/health/readiness
+            port: 8080
           initialDelaySeconds: 20
           periodSeconds: 5
           timeoutSeconds: 3

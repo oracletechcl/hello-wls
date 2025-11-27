@@ -462,6 +462,7 @@ Commands:
     --deploy                    Deploy to OKE (requires image in registry or locally)
     --logs                      Show application logs
     --undeploy                  Remove deployment from OKE
+    --undeploy-oke              Remove namespace and all resources from OKE
     --undeploy-ci               Remove Container Instance from OCI
     --status                    Show deployment status
     --help                      Show this help message
@@ -523,7 +524,7 @@ main() {
     
     while [[ $# -gt 0 ]]; do
         case $1 in
-            --oke|--ci|--build|--push|--deploy|--logs|--status|--undeploy|--undeploy-ci|--help)
+            --oke|--ci|--build|--push|--deploy|--logs|--status|--undeploy|--undeploy-oke|--undeploy-ci|--help)
                 command="$1"
                 shift
                 ;;
@@ -607,6 +608,12 @@ main() {
             ;;
         --undeploy)
             undeploy_from_oke
+            ;;
+        --undeploy-oke)
+            print_header "Undeploying from OKE (Namespace Deletion)"
+            print_info "Deleting namespace: $APP_NAMESPACE"
+            kubectl delete namespace $APP_NAMESPACE --force --grace-period=0 2>/dev/null || print_warning "Namespace not found"
+            print_success "Namespace and all resources removed"
             ;;
         --undeploy-ci)
             undeploy_ci
