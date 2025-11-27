@@ -1,3 +1,7 @@
+# Output directory of WDT
+
+wdt-output/
+
 # Compiled class files
 *.class
 
