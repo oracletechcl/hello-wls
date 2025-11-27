@@ -55,7 +55,8 @@ The script will:
 4. ✓ Create basic WebLogic Docker image
 5. ✓ Inspect the created image
 6. ✓ Create WDT domain image (if WDT model is available)
-7. ✓ Generate summary report
+7. ✓ Push images to OCIR (Oracle Cloud Infrastructure Registry)
+8. ✓ Generate summary report
 
 ### 3. Review Results
 
@@ -74,6 +75,33 @@ docker images | grep wls
 
 ## Script Options
 
+### Domain Types
+
+Choose between Model-in-Image or Domain-in-Image:
+
+```bash
+# Model-in-Image (default) - WDT model in image, domain created at runtime
+./wit.sh --mii
+
+# Domain-in-Image - Domain fully created in image, ready to run
+./wit.sh --dii
+```
+
+### OCIR Integration
+
+By default, images are automatically pushed to OCIR. To skip OCIR push:
+
+```bash
+./wit.sh --no-push
+```
+
+**OCIR Configuration:**
+- Registry: `scl.ocir.io`
+- Namespace: `idi1o0a010nx`
+- Repository: `dalquint-docker-images`
+
+See [OCIR_LOGIN.md](OCIR_LOGIN.md) for authentication instructions.
+
 ### Clean Mode
 
 Remove all WIT artifacts and start fresh:
@@ -86,6 +114,21 @@ This will:
 - Remove all Docker images created by the script
 - Delete the `wit-output` directory
 - Clear the WIT cache (`~/.imagetool-cache`)
+
+### Non-Interactive Mode
+
+Run the script without prompts for automated execution:
+
+```bash
+./wit.sh -y
+# or
+./wit.sh --yes
+```
+
+This is useful for:
+- CI/CD pipelines
+- Automated builds
+- Testing scenarios
 
 ### Help
 
@@ -131,6 +174,46 @@ Customize Docker image tags in `wit.sh`:
 IMAGE_TAG="wls:12.2.1.4.0"
 IMAGE_TAG_WDT="wls-wdt:12.2.1.4.0"
 ```
+
+### OCIR Configuration
+
+Customize OCIR settings in `wit.sh`:
+
+```bash
+OCIR_REGION="scl"
+OCIR_NAMESPACE="idi1o0a010nx"
+OCIR_REPO="dalquint-docker-images"
+```
+
+## OCIR (Oracle Cloud Infrastructure Registry)
+
+### Authentication
+
+Before running the script, log in to OCIR:
+
+```bash
+docker login scl.ocir.io
+```
+
+Credentials:
+- **Username**: `idi1o0a010nx/oracleidentitycloudservice/your-oci-email`
+- **Password**: Your OCI Auth Token
+
+For detailed instructions, see [OCIR_LOGIN.md](OCIR_LOGIN.md).
+
+### Image Availability
+
+After successful execution, images are available at:
+
+- **Base WebLogic**: `scl.ocir.io/idi1o0a010nx/dalquint-docker-images/wls:12.2.1.4.0`
+- **Model-in-Image**: `scl.ocir.io/idi1o0a010nx/dalquint-docker-images/wls-wdt-mii:12.2.1.4.0`
+- **Domain-in-Image**: `scl.ocir.io/idi1o0a010nx/dalquint-docker-images/wls-wdt-dii:12.2.1.4.0`
+
+### Public Repository
+
+The repository is configured as **public**, allowing:
+- ✅ Anyone can pull images without authentication
+- ✅ Authentication required to push images
 
 ## Output Files
 

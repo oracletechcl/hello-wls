@@ -48,9 +48,23 @@ JDK_INSTALLER="$INSTALLERS_DIR/jdk-8u202-linux-x64.tar.gz"
 # Image configuration
 WLS_VERSION="12.2.1.4.0"
 JDK_VERSION="8u202"
+
+# OCIR Configuration
+OCIR_REGION="scl"
+OCIR_NAMESPACE="idi1o0a010nx"
+OCIR_REPO="dalquint-docker-images"
+OCIR_REGISTRY="${OCIR_REGION}.ocir.io"
+OCIR_REGISTRY_PATH="${OCIR_REGISTRY}/${OCIR_NAMESPACE}/${OCIR_REPO}"
+
+# Local image tags
 IMAGE_TAG="wls:12.2.1.4.0"
 IMAGE_TAG_PATCHED="wls:12.2.1.4.0-patched"
 IMAGE_TAG_WDT="wls-wdt:12.2.1.4.0"
+
+# OCIR image tags
+OCIR_IMAGE_TAG="${OCIR_REGISTRY_PATH}/wls:12.2.1.4.0"
+OCIR_IMAGE_TAG_WDT_MII="${OCIR_REGISTRY_PATH}/wls-wdt-mii:12.2.1.4.0"
+OCIR_IMAGE_TAG_WDT_DII="${OCIR_REGISTRY_PATH}/wls-wdt-dii:12.2.1.4.0"
 
 # WDT integration
 WDT_VERSION="4.3.8"
@@ -62,10 +76,83 @@ WDT_DOMAIN_HOME="/u01/domains/base_domain"  # For Domain-in-Image
 # Flags
 CLEAN_MODE=false
 DOMAIN_TYPE="mii"  # Model-in-Image (default)
+PUSH_TO_OCIR=true  # Push images to OCIR by default
+INTERACTIVE_MODE=true  # Wait for user input between steps
 
 ################################################################################
 # Helper Functions
 ################################################################################
+
+check_ocir_login() {
+    # Check both Docker and Podman auth locations
+    local AUTH_FILES=(
+        ~/.docker/config.json
+        ${XDG_RUNTIME_DIR}/containers/auth.json
+        ~/.config/containers/auth.json
+    )
+    
+    for auth_file in "${AUTH_FILES[@]}"; do
+        if [ -f "$auth_file" ] && grep -q "${OCIR_REGISTRY}" "$auth_file" 2>/dev/null; then
+            return 0
+        fi
+    done
+    
+    return 1
+}
+
+push_to_ocir() {
+    local LOCAL_IMAGE="$1"
+    local OCIR_IMAGE="$2"
+    
+    print_section "Pushing Image to OCIR"
+    
+    # Check if logged in to OCIR
+    if ! check_ocir_login; then
+        print_warning "Not logged in to OCIR registry: ${OCIR_REGISTRY}"
+        print_info "Skipping image push. To push images later:"
+        print_info ""
+        print_info "1. Create an Auth Token in OCI Console:"
+        print_info "   Profile Icon → User Settings → Auth Tokens → Generate Token"
+        print_info ""
+        print_info "2. Login to OCIR:"
+        print_command "docker login ${OCIR_REGISTRY}"
+        print_info "   Username: ${OCIR_NAMESPACE}/oracleidentitycloudservice/<your-email>"
+        print_info "   Password: <your-auth-token>"
+        print_info ""
+        print_info "3. Manually push the tagged images:"
+        print_command "docker push $OCIR_IMAGE"
+        print_info ""
+        print_warning "Images are tagged locally. Run script again after login to push."
+        return 1
+    fi
+    
+    print_step "Tagging image for OCIR: $OCIR_IMAGE"
+    print_command "docker tag $LOCAL_IMAGE $OCIR_IMAGE"
+    docker tag "$LOCAL_IMAGE" "$OCIR_IMAGE" 2>&1 | tee -a "$LOG_FILE"
+    
+    if [ $? -eq 0 ]; then
+        print_success "Image tagged successfully"
+    else
+        print_error "Failed to tag image"
+        return 1
+    fi
+    
+    print_step "Pushing image to OCIR registry: ${OCIR_REGISTRY}"
+    print_info "Repository: ${OCIR_NAMESPACE}/${OCIR_REPO}"
+    print_command "docker push $OCIR_IMAGE"
+    
+    docker push "$OCIR_IMAGE" 2>&1 | tee -a "$LOG_FILE"
+    
+    if [ $? -eq 0 ]; then
+        print_success "Image pushed successfully to OCIR"
+        print_info "Image available at: $OCIR_IMAGE"
+        return 0
+    else
+        print_error "Failed to push image to OCIR"
+        print_warning "Check your OCIR credentials and try logging in again"
+        return 1
+    fi
+}
 
 reset_environment() {
     print_banner "Resetting WIT Environment"
@@ -151,8 +238,10 @@ print_command() {
 }
 
 wait_for_input() {
-    echo -e "\n${YELLOW}Press Enter to continue...${NC}"
-    read
+    if [ "$INTERACTIVE_MODE" = true ]; then
+        echo -e "\n${YELLOW}Press Enter to continue...${NC}"
+        read
+    fi
 }
 
 check_prerequisites() {
@@ -344,6 +433,11 @@ create_basic_image() {
     if docker images -q "$IMAGE_TAG" 2>/dev/null | grep -q .; then
         print_info "Image $IMAGE_TAG already exists"
         print_warning "Skipping image creation (use --clean to rebuild)"
+        
+        # Still push to OCIR if enabled
+        if [ "$PUSH_TO_OCIR" = true ]; then
+            push_to_ocir "$IMAGE_TAG" "$OCIR_IMAGE_TAG"
+        fi
         return 0
     fi
     
@@ -371,6 +465,11 @@ create_basic_image() {
     
     local IMAGE_SIZE=$(docker images "$IMAGE_TAG" --format "{{.Size}}")
     print_info "Image size: $IMAGE_SIZE"
+    
+    # Push to OCIR if enabled
+    if [ "$PUSH_TO_OCIR" = true ]; then
+        push_to_ocir "$IMAGE_TAG" "$OCIR_IMAGE_TAG"
+    fi
 }
 
 inspect_image() {
@@ -461,6 +560,16 @@ create_wdt_domain_image() {
     if docker images -q "$IMAGE_TAG_WDT" 2>/dev/null | grep -q .; then
         print_info "Image $IMAGE_TAG_WDT already exists"
         print_warning "Skipping image creation (use --clean to rebuild)"
+        
+        # Still push to OCIR if enabled
+        if [ "$PUSH_TO_OCIR" = true ]; then
+            # Choose appropriate OCIR tag based on domain type
+            if [ "$DOMAIN_TYPE" = "mii" ]; then
+                push_to_ocir "$IMAGE_TAG_WDT" "$OCIR_IMAGE_TAG_WDT_MII"
+            elif [ "$DOMAIN_TYPE" = "dii" ]; then
+                push_to_ocir "$IMAGE_TAG_WDT" "$OCIR_IMAGE_TAG_WDT_DII"
+            fi
+        fi
         return 0
     fi
     
@@ -500,6 +609,16 @@ create_wdt_domain_image() {
         
         local IMAGE_SIZE=$(docker images "$IMAGE_TAG_WDT" --format "{{.Size}}")
         print_info "Image size: $IMAGE_SIZE"
+        
+        # Push to OCIR if enabled
+        if [ "$PUSH_TO_OCIR" = true ]; then
+            # Choose appropriate OCIR tag based on domain type
+            if [ "$DOMAIN_TYPE" = "mii" ]; then
+                push_to_ocir "$IMAGE_TAG_WDT" "$OCIR_IMAGE_TAG_WDT_MII"
+            elif [ "$DOMAIN_TYPE" = "dii" ]; then
+                push_to_ocir "$IMAGE_TAG_WDT" "$OCIR_IMAGE_TAG_WDT_DII"
+            fi
+        fi
     else
         print_error "Failed to create WDT domain image"
         # Non-fatal - continue with script
@@ -547,6 +666,24 @@ generate_summary() {
         fi
         
         echo ""
+        
+        if [ "$PUSH_TO_OCIR" = true ]; then
+            echo "OCIR Images:"
+            echo "  Registry: ${OCIR_REGISTRY}"
+            echo "  Repository: ${OCIR_NAMESPACE}/${OCIR_REPO}"
+            echo ""
+            if docker images -q "$OCIR_IMAGE_TAG" 2>/dev/null | grep -q .; then
+                echo "  ✓ ${OCIR_IMAGE_TAG}"
+            fi
+            if [ "$DOMAIN_TYPE" = "mii" ] && docker images -q "$OCIR_IMAGE_TAG_WDT_MII" 2>/dev/null | grep -q .; then
+                echo "  ✓ ${OCIR_IMAGE_TAG_WDT_MII}"
+            fi
+            if [ "$DOMAIN_TYPE" = "dii" ] && docker images -q "$OCIR_IMAGE_TAG_WDT_DII" 2>/dev/null | grep -q .; then
+                echo "  ✓ ${OCIR_IMAGE_TAG_WDT_DII}"
+            fi
+            echo ""
+        fi
+        
         echo "Cache Contents:"
         "$WIT_HOME/bin/imagetool.sh" cache listItems 2>&1
         
@@ -558,9 +695,15 @@ generate_summary() {
         echo "Log File: $LOG_FILE"
         echo ""
         echo "Next Steps:"
-        echo "  1. Test the image: docker run -d -p 7001:7001 $IMAGE_TAG"
-        echo "  2. Push to registry: docker tag $IMAGE_TAG <registry>/<repo>:tag"
-        echo "  3. Deploy to Kubernetes using manifests in modernization-ports/*/kubernetes/"
+        if [ "$PUSH_TO_OCIR" = true ]; then
+            echo "  1. Images are available in OCIR at: ${OCIR_REGISTRY_PATH}"
+            echo "  2. Deploy to Kubernetes using the OCIR image references"
+            echo "  3. Update deployment manifests with OCIR image paths"
+        else
+            echo "  1. Test the image: docker run -d -p 7001:7001 $IMAGE_TAG"
+            echo "  2. Push to OCIR: Run script again without --no-push flag"
+            echo "  3. Deploy to Kubernetes using manifests in modernization-ports/*/kubernetes/"
+        fi
         echo ""
         
     } | tee "$SUMMARY_FILE"
@@ -577,6 +720,8 @@ show_help() {
     echo "  -c, --clean     Clean all WIT artifacts before starting"
     echo "  --mii           Create Model-in-Image (default)"
     echo "  --dii           Create Domain-in-Image"
+    echo "  --no-push       Skip pushing images to OCIR"
+    echo "  -y, --yes       Non-interactive mode (skip prompts)"
     echo "  -h, --help      Display this help message"
     echo ""
     echo "Domain Types:"
@@ -589,9 +734,16 @@ show_help() {
     echo "  3. Create basic WebLogic Docker image"
     echo "  4. Inspect created image"
     echo "  5. Create WDT domain image with selected type (if WDT model available)"
+    echo "  6. Push images to OCIR (Oracle Cloud Infrastructure Registry)"
+    echo ""
+    echo "OCIR Configuration:"
+    echo "  Registry: ${OCIR_REGISTRY}"
+    echo "  Namespace: ${OCIR_NAMESPACE}"
+    echo "  Repository: ${OCIR_REPO}"
     echo ""
     echo "Prerequisites:"
     echo "  - Docker installed and running"
+    echo "  - Logged in to OCIR: docker login ${OCIR_REGISTRY}"
     echo "  - JAVA_HOME set correctly"
     echo "  - WebLogic installer at: $WLS_INSTALLER"
     echo "  - JDK installer at: $JDK_INSTALLER"
@@ -619,6 +771,14 @@ main() {
                 ;;
             --dii)
                 DOMAIN_TYPE="dii"
+                shift
+                ;;
+            --no-push)
+                PUSH_TO_OCIR=false
+                shift
+                ;;
+            -y|--yes)
+                INTERACTIVE_MODE=false
                 shift
                 ;;
             -h|--help)
@@ -649,6 +809,12 @@ main() {
         print_info "Domain Type: Model-in-Image (mii)"
     elif [ "$DOMAIN_TYPE" = "dii" ]; then
         print_info "Domain Type: Domain-in-Image (dii)"
+    fi
+    if [ "$PUSH_TO_OCIR" = true ]; then
+        print_info "OCIR Push: Enabled"
+        print_info "OCIR Registry: ${OCIR_REGISTRY_PATH}"
+    else
+        print_info "OCIR Push: Disabled (use without --no-push to enable)"
     fi
     echo ""
     
