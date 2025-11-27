@@ -44,6 +44,13 @@ INGRESS_NS="traefik"
 INGRESS_RELEASE="traefik-operator"
 INGRESS_HTTP_PORT="30305"
 INGRESS_HTTPS_PORT="30443"
+INGRESS_SERVICE_TYPE="LoadBalancer"  # LoadBalancer or NodePort
+
+# OCI Load Balancer configuration (for OKE deployments)
+OCI_LB_SUBNET="ocid1.subnet.oc1.sa-santiago-1.aaaaaaaactbyskvixf2iggfzfcuwmkzcsrvja2wbv2pi5bxkaofaogurmkpq"
+OCI_LB_SHAPE="flexible"
+OCI_LB_SHAPE_MIN="10"
+OCI_LB_SHAPE_MAX="100"
 
 # Domain configuration (will be set based on domain type)
 DOMAIN_TYPE="mii"  # Model-in-Image (default), can be 'dii' for Domain-in-Image
@@ -340,12 +347,26 @@ install_ingress() {
     # Install Traefik
     print_step "Installing Traefik via Helm"
     print_command "helm install $INGRESS_RELEASE traefik/traefik..."
-    helm install "$INGRESS_RELEASE" traefik/traefik \
-        --namespace "$INGRESS_NS" \
-        --set "ports.web.nodePort=$INGRESS_HTTP_PORT" \
-        --set "ports.websecure.nodePort=$INGRESS_HTTPS_PORT" \
-        --set "service.type=NodePort" \
-        --wait
+    
+    if [ "$INGRESS_SERVICE_TYPE" = "LoadBalancer" ]; then
+        print_info "Configuring Traefik with OCI LoadBalancer"
+        helm install "$INGRESS_RELEASE" traefik/traefik \
+            --namespace "$INGRESS_NS" \
+            --set "service.type=LoadBalancer" \
+            --set-string "service.annotations.service\.beta\.kubernetes\.io/oci-load-balancer-shape=$OCI_LB_SHAPE" \
+            --set-string "service.annotations.service\.beta\.kubernetes\.io/oci-load-balancer-shape-flex-min=$OCI_LB_SHAPE_MIN" \
+            --set-string "service.annotations.service\.beta\.kubernetes\.io/oci-load-balancer-shape-flex-max=$OCI_LB_SHAPE_MAX" \
+            --set-string "service.annotations.service\.beta\.kubernetes\.io/oci-load-balancer-subnet1=$OCI_LB_SUBNET" \
+            --wait
+    else
+        print_info "Configuring Traefik with NodePort"
+        helm install "$INGRESS_RELEASE" traefik/traefik \
+            --namespace "$INGRESS_NS" \
+            --set "ports.web.nodePort=$INGRESS_HTTP_PORT" \
+            --set "ports.websecure.nodePort=$INGRESS_HTTPS_PORT" \
+            --set "service.type=NodePort" \
+            --wait
+    fi
     
     print_success "Traefik installed successfully"
     
@@ -668,13 +689,13 @@ spec:
     - match: PathPrefix(\`/console\`)
       kind: Rule
       services:
-        - name: ${DOMAIN_UID}-admin-server
+        - name: ${DOMAIN_UID}-adminserver
           port: 8001
     - match: PathPrefix(\`/hostinfo\`)
       kind: Rule
       services:
         - name: ${DOMAIN_UID}-cluster-${CLUSTER_NAME}
-          port: 8004
+          port: 8001
 EOF
 
     print_success "Ingress route YAML created: $manifest_file"
@@ -748,39 +769,60 @@ verify_deployment() {
 display_access_info() {
     print_section "Access Information"
     
-    # Get node IP for local clusters
+    # Get node IP
     local node_ip=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}' 2>/dev/null)
     if [ -z "$node_ip" ]; then
         node_ip="<NODE_IP>"
     fi
     
+    # Check if running in OKE (Oracle Kubernetes Engine)
+    local is_oke=$(kubectl get nodes -o json | jq -r '.items[0].metadata.labels."node.kubernetes.io/instance-type"' 2>/dev/null | grep -q "VM.Standard" && echo "true" || echo "false")
+    
     echo ""
     echo -e "${BOLD}${GREEN}═══════════════════════════════════════════════════════════${NC}"
-    echo -e "${BOLD}${GREEN}         ACCESS URLS (via Ingress Controller)${NC}"
+    echo -e "${BOLD}${GREEN}         WebLogic Domain Deployed Successfully!${NC}"
     echo -e "${BOLD}${GREEN}═══════════════════════════════════════════════════════════${NC}"
     echo ""
-    echo -e "${CYAN}${BOLD}WebLogic Admin Console:${NC}"
-    echo -e "  ${BOLD}http://${node_ip}:${INGRESS_HTTP_PORT}/console${NC}"
+    echo -e "${CYAN}${BOLD}Domain Information:${NC}"
+    echo -e "  Domain UID:  ${BOLD}${DOMAIN_UID}${NC}"
+    echo -e "  Namespace:   ${BOLD}${DOMAIN_NS}${NC}"
+    echo -e "  Type:        ${BOLD}$([ "$DOMAIN_TYPE" = "mii" ] && echo "Model-in-Image" || echo "Domain-in-Image")${NC}"
     echo ""
-    echo -e "${CYAN}${BOLD}Clustered Application (hostinfo):${NC}"
-    echo -e "  ${BOLD}http://${node_ip}:${INGRESS_HTTP_PORT}/hostinfo/${NC}"
+    echo -e "${CYAN}${BOLD}Pods Running:${NC}"
+    kubectl get pods -n "$DOMAIN_NS" --no-headers 2>/dev/null | awk '{printf "  %-30s %s\n", $1, $3}'
+    echo ""
+    echo -e "${CYAN}${BOLD}ACCESS URLS:${NC}"
+    echo -e "${YELLOW}Via Traefik Ingress (NodePort ${INGRESS_HTTP_PORT}):${NC}"
+    echo -e "  WebLogic Console:  ${BOLD}http://${node_ip}:${INGRESS_HTTP_PORT}/console${NC}"
+    echo -e "  Clustered App:     ${BOLD}http://${node_ip}:${INGRESS_HTTP_PORT}/hostinfo/${NC}"
+    echo ""
+    echo -e "${YELLOW}Via AdminServer NodePort (30701):${NC}"
+    echo -e "  WebLogic Console:  ${BOLD}http://${node_ip}:30701/console${NC}"
     echo ""
     echo -e "${CYAN}${BOLD}Credentials:${NC}"
     echo -e "  Username: ${BOLD}${ADMIN_USERNAME}${NC}"
     echo -e "  Password: ${BOLD}${ADMIN_PASSWORD}${NC}"
     echo ""
-    echo -e "${YELLOW}Note: Admin Server is also accessible via NodePort:${NC}"
-    echo -e "      http://${node_ip}:30701/console"
+    
+    if [ "$is_oke" = "true" ]; then
+        echo -e "${YELLOW}${BOLD}Note: Running on OKE with private nodes${NC}"
+        echo -e "  ${YELLOW}• NodePort services use internal IPs (${node_ip})${NC}"
+        echo -e "  ${YELLOW}• Access via bastion host or VPN to VCN${NC}"
+        echo -e "  ${YELLOW}• For LoadBalancer access, change Traefik service type:${NC}"
+        echo -e "    ${BOLD}kubectl patch svc traefik-operator -n traefik -p '{\"spec\":{\"type\":\"LoadBalancer\"}}'${NC}"
+        echo ""
+    fi
+    
+    echo -e "${CYAN}${BOLD}Alternative Access Methods:${NC}"
+    echo -e "  ${BOLD}1. Port Forward (for local testing):${NC}"
+    echo -e "     kubectl port-forward -n ${DOMAIN_NS} svc/${DOMAIN_UID}-adminserver 8001:8001"
+    echo -e "     Then access: http://localhost:8001/console"
+    echo ""
+    echo -e "  ${BOLD}2. Get Node IPs:${NC}"
+    echo -e "     kubectl get nodes -o wide"
     echo ""
     echo -e "${GREEN}═══════════════════════════════════════════════════════════${NC}"
     echo ""
-    
-    if [ "$node_ip" = "<NODE_IP>" ]; then
-        print_warning "Unable to detect node IP automatically"
-        print_info "To get the actual node IP, run:"
-        print_command "kubectl get nodes -o wide"
-        echo ""
-    fi
     
     pause_for_review
 }
