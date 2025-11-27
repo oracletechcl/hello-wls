@@ -28,7 +28,14 @@ BOLD='\033[1m'
 # Configuration variables
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Source environment file if it exists
+# Load environment variables from .env file if it exists
+if [ -f "$SCRIPT_DIR/.env" ]; then
+    set -a  # Export all variables
+    source "$SCRIPT_DIR/.env"
+    set +a
+fi
+
+# Source environment file if it exists (for backward compatibility)
 if [ -f "$SCRIPT_DIR/setWITEnv.sh" ]; then
     source "$SCRIPT_DIR/setWITEnv.sh"
 fi
@@ -289,6 +296,25 @@ check_prerequisites() {
         missing_prereqs=$((missing_prereqs + 1))
     fi
     
+    # Check and setup OCIR credentials
+    print_step "Checking OCIR credentials"
+    if [ -n "$OCIR_USERNAME" ] && [ -n "$OCIR_AUTH_TOKEN" ]; then
+        print_success "OCIR credentials found in .env file"
+        
+        # Automatically login to OCIR
+        print_step "Logging into OCIR ($OCIR_REGISTRY)"
+        echo "$OCIR_AUTH_TOKEN" | docker login "$OCIR_REGISTRY" -u "$OCIR_USERNAME" --password-stdin &> /dev/null
+        if [ $? -eq 0 ]; then
+            print_success "Successfully logged into OCIR"
+        else
+            print_warning "OCIR login failed - image push may fail"
+        fi
+    else
+        print_warning "OCIR credentials not found in .env file"
+        print_info "Image push to OCIR will be skipped"
+        print_info "Set credentials in $SCRIPT_DIR/.env to enable OCIR push"
+    fi
+    
     if [ $missing_prereqs -gt 0 ]; then
         print_error "Missing $missing_prereqs prerequisite(s). Please install and retry."
         exit 1
@@ -437,6 +463,11 @@ create_basic_image() {
         # Still push to OCIR if enabled
         if [ "$PUSH_TO_OCIR" = true ]; then
             push_to_ocir "$IMAGE_TAG" "$OCIR_IMAGE_TAG"
+            
+            # Also push as weblogic:12.2.1.4 for WKO compatibility
+            local OCIR_WEBLOGIC_TAG="${OCIR_REGISTRY_PATH}/weblogic:12.2.1.4"
+            print_step "Also pushing as weblogic base image for WKO: $OCIR_WEBLOGIC_TAG"
+            push_to_ocir "$IMAGE_TAG" "$OCIR_WEBLOGIC_TAG"
         fi
         return 0
     fi
@@ -469,6 +500,11 @@ create_basic_image() {
     # Push to OCIR if enabled
     if [ "$PUSH_TO_OCIR" = true ]; then
         push_to_ocir "$IMAGE_TAG" "$OCIR_IMAGE_TAG"
+        
+        # Also push as weblogic:12.2.1.4 for WKO compatibility
+        local OCIR_WEBLOGIC_TAG="${OCIR_REGISTRY_PATH}/weblogic:12.2.1.4"
+        print_step "Also pushing as weblogic base image for WKO: $OCIR_WEBLOGIC_TAG"
+        push_to_ocir "$IMAGE_TAG" "$OCIR_WEBLOGIC_TAG"
     fi
 }
 
@@ -576,32 +612,137 @@ create_wdt_domain_image() {
     print_step "Creating WebLogic image with WDT domain: $IMAGE_TAG_WDT"
     
     # Build command based on domain type
-    local FULL_CMD="$WIT_HOME/bin/imagetool.sh create --tag $IMAGE_TAG_WDT --type wls --version $WLS_VERSION --jdkVersion $JDK_VERSION --wdtVersion $WDT_VERSION --wdtModel $WDT_MODEL_FILE"
-    
-    # Add archive if it exists
-    if [ -f "$WDT_ARCHIVE_FILE" ]; then
-        FULL_CMD="$FULL_CMD --wdtArchive $WDT_ARCHIVE_FILE"
-    fi
-    
-    # Add properties/variable file if it exists
-    if [ -f "$WDT_VARIABLE_FILE" ]; then
-        FULL_CMD="$FULL_CMD --wdtVariables $WDT_VARIABLE_FILE"
-        print_info "Using WDT properties file: $WDT_VARIABLE_FILE"
-    fi
-    
-    # Add domain home for Domain-in-Image
-    if [ "$DOMAIN_TYPE" = "dii" ]; then
-        FULL_CMD="$FULL_CMD --wdtDomainHome $WDT_DOMAIN_HOME"
+    if [ "$DOMAIN_TYPE" = "mii" ]; then
+        # Model-in-Image: Create auxiliary image with WDT and model files only using Dockerfile
+        print_info "Creating auxiliary image for Model-in-Image deployment"
+        
+        # Create Dockerfile for auxiliary image
+        local DOCKERFILE="$WIT_WORK_DIR/Dockerfile.auxiliary"
+        cat > "$DOCKERFILE" << 'EOF'
+FROM ghcr.io/oracle/oraclelinux:8-slim
+
+# Install prerequisites
+RUN microdnf install -y unzip && microdnf clean all
+
+# Create oracle user and group for consistency with WebLogic containers
+RUN groupadd -g 1000 oracle && \
+    useradd -u 1000 -g oracle oracle
+
+# Create auxiliary directories
+RUN mkdir -p /auxiliary /auxiliary/models && \
+    chown -R oracle:oracle /auxiliary && \
+    chmod -R 755 /auxiliary
+
+# Copy WDT zip and extract
+COPY weblogic-deploy*.zip /tmp/
+RUN cd /tmp && \
+    unzip -q weblogic-deploy*.zip && \
+    rm weblogic-deploy*.zip && \
+    mv weblogic-deploy* /auxiliary/weblogic-deploy && \
+    chown -R oracle:oracle /auxiliary/weblogic-deploy && \
+    chmod -R 755 /auxiliary/weblogic-deploy
+
+# Copy model file if it exists
+COPY base_domain_model.yaml /auxiliary/models/
+# Copy archive if it exists
+COPY base_domain_archive.zip /auxiliary/models/
+
+# Set final permissions
+RUN chown -R oracle:oracle /auxiliary && \
+    chmod -R 755 /auxiliary
+
+USER oracle
+WORKDIR /auxiliary
+EOF
+        
+        print_success "Generated Dockerfile: $DOCKERFILE"
+        
+        # Copy WDT and model files to build context
+        local BUILD_CONTEXT="$WIT_WORK_DIR/auxiliary-build"
+        mkdir -p "$BUILD_CONTEXT"
+        
+        print_step "Preparing build context"
+        # Find WDT zip - check multiple locations
+        local WDT_ZIP=""
+        local WDT_LOCATIONS=(
+            "$WIT_WORK_DIR/weblogic-deploy-${WDT_VERSION}.zip"
+            "$WORKSPACE_ROOT/replatform/WDT/wdt-output/weblogic-deploy.zip"
+            "$(find "$CACHE_DIR" -name "weblogic-deploy*.zip" 2>/dev/null | head -1)"
+        )
+        
+        for location in "${WDT_LOCATIONS[@]}"; do
+            if [ -f "$location" ]; then
+                WDT_ZIP="$location"
+                break
+            fi
+        done
+        
+        if [ -z "$WDT_ZIP" ] || [ ! -f "$WDT_ZIP" ]; then
+            print_error "WDT zip not found in any expected location"
+            print_info "Checked: ${WDT_LOCATIONS[@]}"
+            return 1
+        fi
+        
+        print_info "Using WDT from: $WDT_ZIP"
+        cp "$WDT_ZIP" "$BUILD_CONTEXT/" 2>&1 | tee -a "$LOG_FILE"
+        
+        cp "$WDT_MODEL_FILE" "$BUILD_CONTEXT/" 2>&1 | tee -a "$LOG_FILE"
+        
+        if [ -f "$WDT_ARCHIVE_FILE" ]; then
+            cp "$WDT_ARCHIVE_FILE" "$BUILD_CONTEXT/" 2>&1 | tee -a "$LOG_FILE"
+        fi
+        
+        if [ -f "$WDT_VARIABLE_FILE" ]; then
+            cp "$WDT_VARIABLE_FILE" "$BUILD_CONTEXT/" 2>&1 | tee -a "$LOG_FILE"
+        fi
+        
+        cp "$DOCKERFILE" "$BUILD_CONTEXT/Dockerfile"
+        
+        # Build the auxiliary image
+        print_step "Building auxiliary image with Docker"
+        print_command "docker build -t $IMAGE_TAG_WDT $BUILD_CONTEXT"
+        docker build -t "$IMAGE_TAG_WDT" "$BUILD_CONTEXT" 2>&1 | tee -a "$LOG_FILE"
+        
+        local BUILD_EXIT_CODE=$?
+        if [ $BUILD_EXIT_CODE -eq 0 ]; then
+            print_success "Auxiliary image created successfully: $IMAGE_TAG_WDT"
+        else
+            print_error "Failed to build auxiliary image"
+            return 1
+        fi
+    else
+        # Domain-in-Image: Create full WebLogic image with domain baked in
+        print_info "Creating full image for Domain-in-Image deployment"
+        local FULL_CMD="$WIT_HOME/bin/imagetool.sh create --tag $IMAGE_TAG_WDT --type wls --version $WLS_VERSION --jdkVersion $JDK_VERSION --wdtVersion $WDT_VERSION --wdtModel $WDT_MODEL_FILE --wdtDomainHome $WDT_DOMAIN_HOME"
+        
+        # Add archive if it exists
+        if [ -f "$WDT_ARCHIVE_FILE" ]; then
+            FULL_CMD="$FULL_CMD --wdtArchive $WDT_ARCHIVE_FILE"
+        fi
+        
+        # Add properties/variable file if it exists
+        if [ -f "$WDT_VARIABLE_FILE" ]; then
+            FULL_CMD="$FULL_CMD --wdtVariables $WDT_VARIABLE_FILE"
+            print_info "Using WDT properties file: $WDT_VARIABLE_FILE"
+        fi
+        
         print_info "Domain will be created at: $WDT_DOMAIN_HOME"
+        
+        print_command "$FULL_CMD"
+        print_info "This may take several minutes..."
+        
+        eval "$FULL_CMD" 2>&1 | tee -a "$LOG_FILE"
+        
+        if [ $? -ne 0 ]; then
+            print_error "Failed to create domain image"
+            return 1
+        fi
+        
+        print_success "WDT domain image created successfully: $IMAGE_TAG_WDT"
     fi
     
-    print_command "$FULL_CMD"
-    print_info "This may take several minutes..."
-    
-    eval "$FULL_CMD" 2>&1 | tee -a "$LOG_FILE"
-    
-    if [ $? -eq 0 ]; then
-        print_success "WDT domain image created successfully: $IMAGE_TAG_WDT"
+    if docker images -q "$IMAGE_TAG_WDT" 2>/dev/null | grep -q .; then
+        print_success "Image verified: $IMAGE_TAG_WDT"
         
         # Display image info
         print_step "Image details:"
@@ -759,6 +900,12 @@ show_help() {
 ################################################################################
 
 main() {
+    # Show help if no arguments provided
+    if [ $# -eq 0 ]; then
+        show_help
+        exit 0
+    fi
+    
     # Parse command line arguments
     while [[ $# -gt 0 ]]; do
         case $1 in

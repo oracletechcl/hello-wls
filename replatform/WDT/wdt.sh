@@ -903,6 +903,12 @@ EOF
 ################################################################################
 
 main() {
+    # Show help if no arguments provided
+    if [ $# -eq 0 ]; then
+        show_help
+        exit 0
+    fi
+    
     # Parse command line arguments
     while [[ $# -gt 0 ]]; do
         case $1 in

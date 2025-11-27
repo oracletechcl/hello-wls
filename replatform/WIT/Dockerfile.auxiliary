@@ -1,0 +1,26 @@
+FROM ghcr.io/oracle/oraclelinux:8-slim
+
+# Install WDT
+ARG WDT_VERSION=4.3.8
+ENV WDT_HOME=/auxiliary/weblogic-deploy \
+    WDT_MODELS=/auxiliary/models
+
+RUN microdnf install -y unzip && microdnf clean all
+
+# Download and install WDT
+RUN mkdir -p /auxiliary && \
+    curl -fL https://github.com/oracle/weblogic-deploy-tooling/releases/download/release-${WDT_VERSION}/weblogic-deploy.zip \
+        -o /tmp/weblogic-deploy.zip && \
+    unzip -q /tmp/weblogic-deploy.zip -d /tmp && \
+    mv /tmp/weblogic-deploy /auxiliary/weblogic-deploy && \
+    rm /tmp/weblogic-deploy.zip && \
+    chmod -R 755 /auxiliary/weblogic-deploy
+
+# Copy WDT model and archive
+RUN mkdir -p /auxiliary/models && \
+    chmod 755 /auxiliary/models
+COPY WDT/wdt-output/base_domain_model.yaml /auxiliary/models/
+COPY WDT/wdt-output/base_domain_archive.zip /auxiliary/models/
+
+# Set ownership and final permissions
+RUN chmod -R 755 /auxiliary

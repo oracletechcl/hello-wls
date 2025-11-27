@@ -1,7 +1,9 @@
 # Output directory of WDT
 
+.env
 wdt-output/
 wit-output/
+wko-output/
 
 # Compiled class files
 *.class
