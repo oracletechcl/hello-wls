@@ -501,6 +501,7 @@ create_domain_resource_dii() {
     local manifest_file="$WKO_WORK_DIR/manifests/domain-dii.yaml"
     
     print_step "Generating domain resource YAML"
+    print_info "NOTE: Using FromModel approach with auxiliary images (same as MII)"
     cat > "$manifest_file" << EOF
 apiVersion: weblogic.oracle/v9
 kind: Domain
@@ -512,13 +513,26 @@ metadata:
 spec:
   domainUID: $DOMAIN_UID
   domainHome: /u01/domains/$DOMAIN_NAME
-  domainHomeSourceType: Image
+  domainHomeSourceType: FromModel
   
-  image: "$IMAGE_DII"
+  image: "$IMAGE_BASE"
   imagePullPolicy: IfNotPresent
   
   imagePullSecrets:
   - name: $OCIR_SECRET_NAME
+  
+  configuration:
+    model:
+      domainType: WLS
+      runtimeEncryptionSecret: ${DOMAIN_UID}-runtime-encryption-secret
+      configMap: ${DOMAIN_UID}-wdt-config-map
+      auxiliaryImages:
+      - image: "$IMAGE_DII"
+        imagePullPolicy: Always
+        sourceWDTInstallHome: /auxiliary/weblogic-deploy
+        sourceModelHome: /auxiliary/models
+    secrets:
+    - ${DOMAIN_UID}-weblogic-credentials
   
   webLogicCredentialsSecret:
     name: ${DOMAIN_UID}-weblogic-credentials
@@ -537,6 +551,16 @@ spec:
           value: "-Dweblogic.StdoutDebugEnabled=false"
         - name: USER_MEM_ARGS
           value: "-Djava.security.egd=file:/dev/./urandom -Xms256m -Xmx512m"
+        - name: ADMIN_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: ${DOMAIN_UID}-weblogic-credentials
+              key: username
+        - name: ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: ${DOMAIN_UID}-weblogic-credentials
+              key: password
   
   clusters:
     - name: ${DOMAIN_UID}-cluster-1
@@ -547,6 +571,16 @@ spec:
         value: "-Dweblogic.StdoutDebugEnabled=false"
       - name: USER_MEM_ARGS
         value: "-Djava.security.egd=file:/dev/./urandom -Xms256m -Xmx512m"
+      - name: ADMIN_USERNAME
+        valueFrom:
+          secretKeyRef:
+            name: ${DOMAIN_UID}-weblogic-credentials
+            key: username
+      - name: ADMIN_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: ${DOMAIN_UID}-weblogic-credentials
+            key: password
 
 ---
 apiVersion: weblogic.oracle/v1
@@ -1098,13 +1132,15 @@ main() {
         esac
     done
     
-    # Set namespace and UID based on domain type
+    # Set namespace, UID, and domain name based on domain type
     if [ "$DOMAIN_TYPE" = "mii" ]; then
         DOMAIN_NS="wls-mii-ns"
         DOMAIN_UID="base-domain-mii"
+        DOMAIN_NAME="mii_base_domain"
     else
         DOMAIN_NS="wls-dii-ns"
         DOMAIN_UID="base-domain-dii"
+        DOMAIN_NAME="dii_base_domain"
     fi
     
     # Handle delete mode
