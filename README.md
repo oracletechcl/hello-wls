@@ -1,76 +1,228 @@
 # Host Info Modernization Workshop
 
-This repository demonstrates the modernization of a legacy WebLogic Server (WLS) Java EE application into modern cloud-native architectures using three popular Java frameworks: **Spring Boot**, **Micronaut**, and **Helidon**. The project showcases how the same business logic and endpoints can be ported and deployed using different technologies, with Docker-based orchestration for local development and testing.
+This repository demonstrates the complete lifecycle of WebLogic Server (WLS) application modernization - from running legacy Java EE applications on WebLogic Server, to replatforming with containers and Kubernetes, to full modernization using cloud-native Java frameworks.
 
-## Architecture Overview
+## 🎯 What This Repository Covers
 
-The project is organized into multiple subfolders, each representing a different approach to running the Host Info application:
+1. **Legacy WebLogic Application** - Traditional Java EE app with Servlets, EJB, and JAX-WS
+2. **Replatforming** - Containerize WebLogic workloads using WDT, WIT, and WKO
+3. **Modernization** - Port to Spring Boot, Micronaut, and Helidon frameworks
+4. **Kubernetes Deployment** - Deploy modernized apps to Kubernetes with ingress
 
-- **standard-wls-deployment**: The original Java EE application running on WebLogic Server.
-- **springboot-port**: The application ported to Spring Boot.
-- **micronaut-port**: The application ported to Micronaut.
-- **helidon-port**: The application ported to Helidon.
-
-Each port exposes the same set of REST endpoints and provides a simple static HTML UI for navigation, as well as an OpenAPI/Swagger UI for API documentation and testing.
-
-### Directory Structure
+## 📁 Repository Structure
 
 ```
-WLS_WORKSHOP/
-  main/
-    hello-wls/
-      standard-wls-deployment/   # Legacy WLS Java EE app
-      springboot-port/           # Spring Boot port
-      micronaut-port/            # Micronaut port
-      helidon-port/              # Helidon port
+hello-wls/
+├── standard-wls-deployment/     # Legacy WebLogic Java EE application
+├── modernization-ports/         # Modernized framework ports
+│   ├── springboot-port/         # Spring Boot 3.x port
+│   ├── micronaut-port/          # Micronaut 4.x port
+│   └── helidon-port/            # Helidon MP port
+├── replatform/                  # WebLogic replatforming tools
+│   ├── WDT/                     # WebLogic Deploy Tooling scripts
+│   ├── WIT/                     # WebLogic Image Tool scripts
+│   └── WKO/                     # WebLogic Kubernetes Operator configs
+├── ingress-controller/          # Kubernetes ingress configuration
+├── scripts/                     # Centralized lab scripts
+│   └── wls-plain-cluster/       # WebLogic cluster management
+└── docs/                        # Comprehensive documentation
+    ├── APACHE_WEBLOGIC_SETUP.md
+    ├── KUBERNETES_DEPLOYMENT.md
+    ├── MIGRATION_SUMMARY.md
+    └── SPRINGBOOT_MIGRATION.md
 ```
 
-## Deployment & Orchestration
+## 🏗️ Architecture Overview
 
-All modernized ports (Spring Boot, Micronaut, Helidon) include:
-- **Dockerfile**: For containerizing the application.
-- **docker-compose.yml**: For orchestrating the app and its dependencies (e.g., database) locally.
-- **build.sh**: Unified build and deployment script supporting options like `--compose-up`, `--compose-down`, and more.
+### The Host Info Application
 
-### General Workflow
-1. **Build and Start**: Use `./build.sh --compose-up` in the desired port directory to build and start the app with Docker Compose.
-2. **Stop and Clean Up**: Use `./build.sh --compose-down` to stop and remove containers and networks.
-3. **Accessing the App**: Each app exposes endpoints and a static UI, typically at `http://localhost:<port>/hostinfo/`.
+The Host Info application is a demonstration web application that provides:
 
-## Endpoints & Features
-- `/api/host-info`         — Host information
-- `/api/database-info`     — Database connection info
-- `/api/session-info`      — Session details
-- `/api/greet`            — Greeting endpoint
-- `/api/welcome`          — Welcome message
-- `/api/service-info`     — Service metadata
-- `/openapi`              — OpenAPI YAML/JSON
-- `/swagger-ui.html` or `/swagger-ui.html` — Swagger UI web interface
-- `/` or `/index.html`    — Static HTML UI for navigation
+| Feature | Description |
+|---------|-------------|
+| **Host Information** | Hostname, IP, OS, Java version, memory stats |
+| **Database Connectivity** | Oracle Autonomous Database with connection pooling |
+| **Session Management** | HTTP session tracking and persistence |
+| **Greeting Service** | REST/SOAP service demonstrating business logic |
 
-## Modernization Paths
+### API Endpoints
 
-- **Spring Boot**: [springboot-port/README.md](main/hello-wls/springboot-port/README.md)
-- **Micronaut**: [micronaut-port/README.md](main/hello-wls/micronaut-port/README.md)
-- **Helidon**: [helidon-port/README.md](main/hello-wls/helidon-port/README.md)
-- **Legacy WLS**: [standard-wls-deployment/README.md](main/hello-wls/standard-wls-deployment/README.md)
+All versions of the application expose these REST endpoints:
 
-Each subproject contains its own README with detailed instructions for building, running, and exploring the specific port.
+| Endpoint | Description |
+|----------|-------------|
+| `/api/host-info` | System and host information |
+| `/api/database-info` | Database connection status |
+| `/api/session-info` | Session details and statistics |
+| `/api/greet?name={name}` | Personalized greeting |
+| `/api/welcome` | Welcome message with timestamp |
+| `/api/service-info` | Service metadata |
+| `/swagger-ui.html` | Interactive API documentation |
+| `/health` | Health check endpoint |
 
-## Additional Resources
-- **docs/**: Contains migration guides, setup instructions, and summaries for each port.
-- **wallet/**: (If present) Contains database wallet files for secure DB connectivity.
+## 🚀 Quick Start
 
-## Getting Started
+For a complete command reference for all deployments, see **[QUICKSTART.md](QUICKSTART.md)**.
 
-1. Clone the repository and navigate to the desired port directory.
-2. Review the specific README for prerequisites and instructions.
-3. Use the provided scripts and Docker Compose files to build and run the application.
+### Option 1: Standard WebLogic Deployment
 
----
+```bash
+cd standard-wls-deployment
+./build.sh
+# Deploy target/hostinfo.war to WebLogic Server
+```
 
-For more details, see the README in each subproject:
-- [Spring Boot Port](main/hello-wls/springboot-port/README.md)
-- [Micronaut Port](main/hello-wls/micronaut-port/README.md)
-- [Helidon Port](main/hello-wls/helidon-port/README.md)
-- [Standard WLS Deployment](main/hello-wls/standard-wls-deployment/README.md)
+### Option 2: Modernized Spring Boot
+
+```bash
+cd modernization-ports/springboot-port
+./build.sh --compose-up
+# Access at http://localhost:8080/hostinfo/
+```
+
+### Option 3: Modernized Micronaut
+
+```bash
+cd modernization-ports/micronaut-port
+./build.sh --compose-up
+# Access at http://localhost:8080/hostinfo/
+```
+
+### Option 4: Modernized Helidon
+
+```bash
+cd modernization-ports/helidon-port
+./build.sh --compose-up
+# Access at http://localhost:8080/hostinfo/
+```
+
+## 📚 Documentation
+
+### Deployment Guides
+
+| Document | Description |
+|----------|-------------|
+| [QUICKSTART.md](QUICKSTART.md) | Quick command reference for all deployments |
+| [docs/KUBERNETES_DEPLOYMENT.md](docs/KUBERNETES_DEPLOYMENT.md) | Kubernetes deployment guide |
+| [docs/APACHE_WEBLOGIC_SETUP.md](docs/APACHE_WEBLOGIC_SETUP.md) | Apache proxy configuration |
+
+### Migration Guides
+
+| Document | Description |
+|----------|-------------|
+| [docs/SPRINGBOOT_MIGRATION.md](docs/SPRINGBOOT_MIGRATION.md) | WebLogic to Spring Boot migration |
+| [docs/MIGRATION_SUMMARY.md](docs/MIGRATION_SUMMARY.md) | Migration status and summary |
+
+### Replatforming Guides
+
+| Document | Description |
+|----------|-------------|
+| [replatform/WDT.md](replatform/WDT.md) | WebLogic Deploy Tooling guide |
+| [replatform/WIT.md](replatform/WIT.md) | WebLogic Image Tool guide |
+| [replatform/WKO.md](replatform/WKO.md) | WebLogic Kubernetes Operator guide |
+
+## 🔧 Components
+
+### Standard WebLogic Deployment
+
+The original Java EE application demonstrating:
+- **Servlets** for request handling
+- **EJB 3.x** Stateless Session Beans
+- **JAX-WS** SOAP Web Services
+- **Oracle UCP** Connection Pooling
+- **WebLogic Session Management**
+
+📖 [standard-wls-deployment/README.md](standard-wls-deployment/README.md)
+
+### Modernization Ports
+
+Three modernized versions using cloud-native Java frameworks:
+
+| Framework | Key Features | Startup Time |
+|-----------|--------------|--------------|
+| **Spring Boot 3.x** | Embedded Tomcat, Spring MVC, Actuator | ~5 seconds |
+| **Micronaut 4.x** | Embedded Netty, AOT compilation, GraalVM ready | ~1 second |
+| **Helidon MP** | MicroProfile, JAX-RS, CDI | ~2 seconds |
+
+Each port includes:
+- ✅ REST APIs with JSON responses
+- ✅ Swagger/OpenAPI documentation
+- ✅ Health check endpoints
+- ✅ HikariCP connection pooling
+- ✅ Docker and Docker Compose support
+- ✅ Kubernetes manifests
+
+📖 Detailed READMEs:
+- [modernization-ports/springboot-port/README.md](modernization-ports/springboot-port/README.md)
+- [modernization-ports/micronaut-port/README.md](modernization-ports/micronaut-port/README.md)
+- [modernization-ports/helidon-port/README.md](modernization-ports/helidon-port/README.md)
+
+### Replatforming Tools
+
+Scripts and configurations for containerizing WebLogic workloads:
+
+| Tool | Purpose |
+|------|---------|
+| **WDT** | Discover domains, create models, validate configurations |
+| **WIT** | Build container images with WebLogic and domains |
+| **WKO** | Deploy and manage WebLogic domains on Kubernetes |
+
+📖 Tool documentation in [replatform/](replatform/)
+
+### Scripts
+
+Centralized lab scripts for common operations:
+
+```bash
+# Start WebLogic cluster
+./scripts/wls-plain-cluster/start-cluster.sh
+
+# Stop WebLogic cluster
+./scripts/wls-plain-cluster/stop-cluster.sh
+```
+
+📖 [scripts/README.md](scripts/README.md)
+
+## 🎓 Workshop Labs
+
+### Lab 1: Traditional WebLogic Deployment
+1. Build the WAR file with `./build.sh`
+2. Deploy to WebLogic Server
+3. Access Host Info, Database, Session, and Web Service demos
+
+### Lab 2: Replatforming with WDT/WIT/WKO
+1. Discover domain with WDT: `./replatform/WDT/wdt.sh`
+2. Build container image with WIT: `./replatform/WIT/wit.sh`
+3. Deploy to Kubernetes with WKO: `./replatform/WKO/wko.sh`
+
+### Lab 3: Application Modernization
+1. Compare three modernization approaches
+2. Build and run Spring Boot, Micronaut, and Helidon versions
+3. Deploy to Kubernetes with provided manifests
+
+## 📊 Comparison: WebLogic vs Modernized Frameworks
+
+| Aspect | WebLogic 12.2.1.4 | Spring Boot 3.x | Micronaut 4.x | Helidon MP |
+|--------|-------------------|-----------------|---------------|------------|
+| **Packaging** | WAR | JAR | JAR | JAR |
+| **Server** | External | Embedded Tomcat | Embedded Netty | Embedded |
+| **Startup*** | ~60 seconds | ~5 seconds | ~1 second | ~2 seconds |
+| **Memory*** | 512+ MB | ~256 MB | ~128 MB | ~150 MB |
+| **Container** | Required | Optional | Optional | Optional |
+| **Standards** | Java EE | Spring | Micronaut | MicroProfile |
+
+*Note: Startup times and memory usage are approximate and may vary based on hardware, JVM settings, application complexity, and deployment configuration. Values shown are typical for the Host Info demo application.
+
+## 🔗 Related Resources
+
+- [WebLogic Documentation](https://docs.oracle.com/en/middleware/fusion-middleware/weblogic-server/)
+- [WebLogic Deploy Tooling](https://oracle.github.io/weblogic-deploy-tooling/)
+- [WebLogic Image Tool](https://oracle.github.io/weblogic-image-tool/)
+- [WebLogic Kubernetes Operator](https://oracle.github.io/weblogic-kubernetes-operator/)
+- [Spring Boot Documentation](https://docs.spring.io/spring-boot/docs/current/reference/html/)
+- [Micronaut Documentation](https://micronaut.io/documentation.html)
+- [Helidon Documentation](https://helidon.io/docs/latest/)
+
+## 📝 License
+
+Copyright (c) Oracle Corporation
