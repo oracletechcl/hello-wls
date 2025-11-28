@@ -142,6 +142,16 @@ wait_for_pods() {
     
     print_step "Waiting for pods with label '$label' in namespace '$namespace'"
     
+    # Check if pods already exist and are ready
+    if kubectl get pods -n "$namespace" -l "$label" 2>/dev/null | grep -q "Running"; then
+        local ready_count=$(kubectl get pods -n "$namespace" -l "$label" -o jsonpath='{range .items[*]}{.status.conditions[?(@.type=="Ready")].status}{"\n"}{end}' 2>/dev/null | grep -c "True" || echo "0")
+        local total_count=$(kubectl get pods -n "$namespace" -l "$label" --no-headers 2>/dev/null | wc -l)
+        if [ "$ready_count" = "$total_count" ] && [ "$total_count" -gt 0 ]; then
+            print_success "Pods are already ready"
+            return 0
+        fi
+    fi
+    
     kubectl wait --for=condition=ready pod \
         -l "$label" \
         -n "$namespace" \
@@ -821,16 +831,29 @@ wait_for_domain() {
     if [ "$DOMAIN_TYPE" = "mii" ]; then
         print_step "Waiting for introspector job to complete"
         local introspector_job="${DOMAIN_UID}-introspector"
+        local job_found=false
+        local job_completed=false
         
         for i in {1..60}; do
             if kubectl get job "$introspector_job" -n "$DOMAIN_NS" &> /dev/null; then
-                if kubectl wait --for=condition=complete job/"$introspector_job" -n "$DOMAIN_NS" --timeout=300s 2>/dev/null; then
+                job_found=true
+                if kubectl wait --for=condition=complete job/"$introspector_job" -n "$DOMAIN_NS" --timeout=5s 2>/dev/null; then
                     print_success "Introspector job completed"
+                    job_completed=true
                     break
                 fi
+            elif [ "$job_found" = true ]; then
+                # Job existed but now gone - it completed and was cleaned up
+                print_success "Introspector job completed and cleaned up"
+                job_completed=true
+                break
             fi
             sleep 5
         done
+        
+        if [ "$job_completed" = false ]; then
+            print_warning "Introspector job timeout - continuing anyway"
+        fi
     fi
     
     # Wait for admin server

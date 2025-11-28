@@ -204,6 +204,10 @@ deploy_to_oke() {
     kubectl apply -f "$TEMP_DEPLOY_FILE"
     print_success "Deployment applied"
     
+    print_info "Applying Service..."
+    kubectl apply -f "$KUBERNETES_DIR/service.yaml"
+    print_success "Service applied"
+    
     print_info "Applying Ingress..."
     kubectl apply -f "$KUBERNETES_DIR/ingress.yaml"
     print_success "Ingress applied"
