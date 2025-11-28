@@ -206,10 +206,12 @@ Centralized lab scripts for common operations:
 |--------|-------------------|-----------------|---------------|------------|
 | **Packaging** | WAR | JAR | JAR | JAR |
 | **Server** | External | Embedded Tomcat | Embedded Netty | Embedded |
-| **Startup** | ~60 seconds | ~5 seconds | ~1 second | ~2 seconds |
-| **Memory** | 512+ MB | ~256 MB | ~128 MB | ~150 MB |
+| **Startup*** | ~60 seconds | ~5 seconds | ~1 second | ~2 seconds |
+| **Memory*** | 512+ MB | ~256 MB | ~128 MB | ~150 MB |
 | **Container** | Required | Optional | Optional | Optional |
 | **Standards** | Java EE | Spring | Micronaut | MicroProfile |
+
+*Note: Startup times and memory usage are approximate and may vary based on hardware, JVM settings, application complexity, and deployment configuration. Values shown are typical for the Host Info demo application.
 
 ## 🔗 Related Resources
 

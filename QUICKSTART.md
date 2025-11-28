@@ -23,13 +23,16 @@ This guide provides summarized commands for all deployment options in the Host I
 
 | Requirement | Standard WLS | Modernized Apps | Replatforming | Kubernetes |
 |-------------|--------------|-----------------|---------------|------------|
-| Java 17+ | - | ✅ | - | - |
+| Java 17+ (recommended) | - | ✅ | - | - |
+| Java 11+ (minimum for modern) | - | ✅ | - | - |
 | Java 8+ | ✅ | - | ✅ | - |
 | Maven 3.6+ | ✅ | ✅ | - | - |
 | Docker | - | ✅ | ✅ | - |
 | kubectl | - | - | - | ✅ |
 | Helm 3+ | - | - | - | ✅ |
 | WebLogic 12.2.1.4 | ✅ | - | ✅ | - |
+
+> **Note**: Modernized applications (Spring Boot 3.x, Micronaut 4.x, Helidon MP) require Java 17+ for full feature support. Some features may work with Java 11. Standard WebLogic and replatforming tools require Java 8 to match WebLogic 12.2.1.4.
 
 ---
 
