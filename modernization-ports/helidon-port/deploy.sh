@@ -25,7 +25,7 @@ OCI_COMPARTMENT_OCID="ocid1.compartment.oc1..aaaaaaaal7vn7wsy3qgizklrlfgo2vllfta
 SUBNET_OCID="ocid1.subnet.oc1.sa-santiago-1.aaaaaaaactbyskvixf2iggfzfcuwmkzcsrvja2wbv2pi5bxkaofaogurmkpq"
 CONTAINER_NAME="hostinfo-helidon-container"
 DISPLAY_NAME="hostinfo-helidon-instance"
-APP_PORT="8080"
+APP_PORT="8081"
 
 # Auto-load Docker credentials from Podman
 get_docker_username() {
@@ -347,7 +347,7 @@ deploy_ci() {
         --shape "CI.Standard.E4.Flex" \
         --shape-config '{"memoryInGBs":8,"ocpus":1}' \
         --display-name "$DISPLAY_NAME" \
-        --vnics '[{"subnetId":"'$SUBNET_OCID'","assignPublicIp":false,"displayName":"'$CONTAINER_NAME'-vnic","hostnameLabel":"'$CONTAINER_NAME'"}]' \
+        --vnics '[{"subnetId":"'$SUBNET_OCID'","assignPublicIp":true,"displayName":"'$CONTAINER_NAME'-vnic","hostnameLabel":"'$CONTAINER_NAME'"}]' \
         --containers '[{
             "displayName": "'$CONTAINER_NAME'",
             "imageUrl": "'$IMAGE_FULL_NAME'",
@@ -396,13 +396,24 @@ get_ci_details() {
         --vnic-id "$VNIC_ID" \
         --query 'data."private-ip"' --raw-output 2>/dev/null || echo "")
     
+    # Get public IP from VNIC
+    CONTAINER_PUBLIC_IP=$(oci network vnic get \
+        --vnic-id "$VNIC_ID" \
+        --query 'data."public-ip"' --raw-output 2>/dev/null || echo "")
+    
     if [ -n "$CONTAINER_PRIVATE_IP" ] && [ "$CONTAINER_PRIVATE_IP" != "null" ]; then
         echo ""
         print_success "Container Instance deployed successfully!"
         echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-        echo -e "${GREEN}OCID:${NC}       $CONTAINER_INSTANCE_OCID"
-        echo -e "${GREEN}Private IP:${NC} $CONTAINER_PRIVATE_IP"
-        echo -e "${GREEN}URL:${NC}        http://${CONTAINER_PRIVATE_IP}:${APP_PORT}"
+        echo -e "${GREEN}OCID:${NC}        $CONTAINER_INSTANCE_OCID"
+        echo -e "${GREEN}Private IP:${NC}  $CONTAINER_PRIVATE_IP"
+        
+        if [ -n "$CONTAINER_PUBLIC_IP" ] && [ "$CONTAINER_PUBLIC_IP" != "null" ]; then
+            echo -e "${GREEN}Public IP:${NC}   $CONTAINER_PUBLIC_IP"
+            echo -e "${GREEN}Public URL:${NC}  http://${CONTAINER_PUBLIC_IP}:${APP_PORT}/hostinfo"
+        fi
+        
+        echo -e "${GREEN}Private URL:${NC} http://${CONTAINER_PRIVATE_IP}:${APP_PORT}/hostinfo"
         echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     else
         print_warning "Could not retrieve private IP address"
