@@ -7,7 +7,7 @@ server:
     classpath:
       location: /static
       welcome: index.html
-      context: /hostinfo
+      context: /helidon
 
 # Application configuration
 app:

@@ -1,18 +1,38 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: hostinfo-helidon
+  name: hostinfo-helidon-openapi
   namespace: hostinfo-helidon
   annotations:
     kubernetes.io/ingress.class: "nginx"
-    nginx.ingress.kubernetes.io/rewrite-target: /hostinfo/$2
+    nginx.ingress.kubernetes.io/rewrite-target: /openapi
 spec:
   rules:
   - host: wlsoke.alquinta.xyz
     http:
       paths:
-      - path: /helidon(/|$)(.*)
-        pathType: ImplementationSpecific
+      - path: /helidon/openapi
+        pathType: Exact
+        backend:
+          service:
+            name: hostinfo-helidon
+            port:
+              number: 8081
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: hostinfo-helidon
+  namespace: hostinfo-helidon
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+spec:
+  rules:
+  - host: wlsoke.alquinta.xyz
+    http:
+      paths:
+      - path: /helidon
+        pathType: Prefix
         backend:
           service:
             name: hostinfo-helidon

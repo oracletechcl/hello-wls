@@ -36,8 +36,14 @@
     <script src="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui-standalone-preset.js" charset="UTF-8"></script>
     <script>
         window.onload = function() {
+            // Detect if we're behind ingress or direct access
+            // Try the context path first, fall back to root if that fails
+            const openapiUrl = window.location.pathname.includes('/helidon/') 
+                ? '/helidon/openapi' 
+                : '/openapi';
+            
             const ui = SwaggerUIBundle({
-                url: "/openapi",
+                url: openapiUrl,
                 dom_id: '#swagger-ui',
                 deepLinking: true,
                 presets: [

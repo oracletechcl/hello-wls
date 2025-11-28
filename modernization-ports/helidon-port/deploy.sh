@@ -410,10 +410,10 @@ get_ci_details() {
         
         if [ -n "$CONTAINER_PUBLIC_IP" ] && [ "$CONTAINER_PUBLIC_IP" != "null" ]; then
             echo -e "${GREEN}Public IP:${NC}   $CONTAINER_PUBLIC_IP"
-            echo -e "${GREEN}Public URL:${NC}  http://${CONTAINER_PUBLIC_IP}:${APP_PORT}/hostinfo"
+            echo -e "${GREEN}Public URL:${NC}  http://${CONTAINER_PUBLIC_IP}:${APP_PORT}/helidon"
         fi
         
-        echo -e "${GREEN}Private URL:${NC} http://${CONTAINER_PRIVATE_IP}:${APP_PORT}/hostinfo"
+        echo -e "${GREEN}Private URL:${NC} http://${CONTAINER_PRIVATE_IP}:${APP_PORT}/helidon"
         echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     else
         print_warning "Could not retrieve private IP address"
