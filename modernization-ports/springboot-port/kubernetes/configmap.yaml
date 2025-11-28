@@ -7,6 +7,6 @@ data:
   APPLICATION_NAME: "Host Information Service"
   APPLICATION_ENVIRONMENT: "production"
   LOG_LEVEL: "INFO"
-  SERVER_SERVLET_CONTEXT_PATH: "/hostinfo"
+  SERVER_SERVLET_CONTEXT_PATH: "/springboot"
   SERVER_PORT: "8080"
   JAVA_OPTS: "-Xmx512m -Xms256m -XX:+UseContainerSupport"

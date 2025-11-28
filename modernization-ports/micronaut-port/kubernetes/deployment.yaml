@@ -51,7 +51,7 @@ spec:
             cpu: "500m"
         livenessProbe:
           httpGet:
-            path: /hostinfo/health
+            path: /micronaut/health
             port: 8082
           initialDelaySeconds: 30
           periodSeconds: 10
@@ -59,7 +59,7 @@ spec:
           failureThreshold: 3
         readinessProbe:
           httpGet:
-            path: /hostinfo/health
+            path: /micronaut/health
             port: 8082
           initialDelaySeconds: 20
           periodSeconds: 5

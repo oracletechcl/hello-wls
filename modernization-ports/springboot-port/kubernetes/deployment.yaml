@@ -24,7 +24,7 @@ spec:
       containers:
       - name: hostinfo-springboot
         # Update with your registry
-        image: docker.io/dralquinta/hostinfo:springboot
+        image: docker.io/dralquinta/hostinfo:springboot-20251128-181301
         imagePullPolicy: Always
         ports:
         - containerPort: 8080
@@ -36,7 +36,7 @@ spec:
             configMapKeyRef:
               name: hostinfo-springboot-config
               key: JAVA_OPTS
-        - name: SERVER_SERVLET_CONTEXT_PATH
+        - name: SERVER_SERVLET_CONTEXTPATH
           valueFrom:
             configMapKeyRef:
               name: hostinfo-springboot-config
@@ -55,7 +55,7 @@ spec:
             cpu: "500m"
         livenessProbe:
           httpGet:
-            path: /hostinfo/actuator/health
+            path: /springboot/actuator/health
             port: 8080
           initialDelaySeconds: 30
           periodSeconds: 10
@@ -63,7 +63,7 @@ spec:
           failureThreshold: 3
         readinessProbe:
           httpGet:
-            path: /hostinfo/actuator/health/readiness
+            path: /springboot/actuator/health/readiness
             port: 8080
           initialDelaySeconds: 20
           periodSeconds: 5

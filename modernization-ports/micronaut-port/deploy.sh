@@ -204,6 +204,10 @@ deploy_to_oke() {
     kubectl apply -f "$TEMP_DEPLOY_FILE"
     print_success "Deployment applied"
     
+    print_info "Applying Service..."
+    kubectl apply -f "$KUBERNETES_DIR/service.yaml"
+    print_success "Service applied"
+    
     print_info "Applying Ingress..."
     kubectl apply -f "$KUBERNETES_DIR/ingress.yaml"
     print_success "Ingress applied"
@@ -264,6 +268,9 @@ undeploy_from_oke() {
     
     print_info "Removing Ingress..."
     kubectl delete -f "$KUBERNETES_DIR/ingress.yaml" 2>/dev/null || print_warning "Ingress not found"
+    
+    print_info "Removing Service..."
+    kubectl delete -f "$KUBERNETES_DIR/service.yaml" 2>/dev/null || print_warning "Service not found"
     
     print_info "Removing Deployment..."
     kubectl delete -f "$KUBERNETES_DIR/deployment.yaml" 2>/dev/null || print_warning "Deployment not found"
@@ -343,7 +350,7 @@ deploy_ci() {
         --shape "CI.Standard.E4.Flex" \
         --shape-config '{"memoryInGBs":8,"ocpus":1}' \
         --display-name "$DISPLAY_NAME" \
-        --vnics '[{"subnetId":"'$SUBNET_OCID'","assignPublicIp":false,"displayName":"'$CONTAINER_NAME'-vnic","hostnameLabel":"'$CONTAINER_NAME'"}]' \
+        --vnics '[{"subnetId":"'$SUBNET_OCID'","assignPublicIp":true,"displayName":"'$CONTAINER_NAME'-vnic","hostnameLabel":"'$CONTAINER_NAME'"}]' \
         --containers '[{
             "displayName": "'$CONTAINER_NAME'",
             "imageUrl": "'$IMAGE_FULL_NAME'",
@@ -392,13 +399,24 @@ get_ci_details() {
         --vnic-id "$VNIC_ID" \
         --query 'data."private-ip"' --raw-output 2>/dev/null || echo "")
     
+    # Get public IP from VNIC
+    CONTAINER_PUBLIC_IP=$(oci network vnic get \
+        --vnic-id "$VNIC_ID" \
+        --query 'data."public-ip"' --raw-output 2>/dev/null || echo "")
+    
     if [ -n "$CONTAINER_PRIVATE_IP" ] && [ "$CONTAINER_PRIVATE_IP" != "null" ]; then
         echo ""
         print_success "Container Instance deployed successfully!"
         echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-        echo -e "${GREEN}OCID:${NC}       $CONTAINER_INSTANCE_OCID"
-        echo -e "${GREEN}Private IP:${NC} $CONTAINER_PRIVATE_IP"
-        echo -e "${GREEN}URL:${NC}        http://${CONTAINER_PRIVATE_IP}:${APP_PORT}"
+        echo -e "${GREEN}OCID:${NC}        $CONTAINER_INSTANCE_OCID"
+        echo -e "${GREEN}Private IP:${NC}  $CONTAINER_PRIVATE_IP"
+        
+        if [ -n "$CONTAINER_PUBLIC_IP" ] && [ "$CONTAINER_PUBLIC_IP" != "null" ]; then
+            echo -e "${GREEN}Public IP:${NC}   $CONTAINER_PUBLIC_IP"
+            echo -e "${GREEN}Public URL:${NC}  http://${CONTAINER_PUBLIC_IP}:${APP_PORT}/micronaut"
+        fi
+        
+        echo -e "${GREEN}Private URL:${NC} http://${CONTAINER_PRIVATE_IP}:${APP_PORT}/micronaut"
         echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     else
         print_warning "Could not retrieve private IP address"

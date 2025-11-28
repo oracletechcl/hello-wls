@@ -3,7 +3,7 @@ micronaut:
     name: hostinfo
   server:
     port: 8082
-    context-path: /hostinfo
+    context-path: /micronaut
   openapi:
     views:
       spec:
