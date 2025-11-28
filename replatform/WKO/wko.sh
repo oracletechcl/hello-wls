@@ -44,7 +44,7 @@ INGRESS_NS="traefik"
 INGRESS_RELEASE="traefik-operator"
 INGRESS_HTTP_PORT="30305"
 INGRESS_HTTPS_PORT="30443"
-INGRESS_SERVICE_TYPE="LoadBalancer"  # LoadBalancer or NodePort
+INGRESS_SERVICE_TYPE="LoadBalancer"
 
 # OCI Load Balancer configuration (for OKE deployments)
 OCI_LB_SUBNET="ocid1.subnet.oc1.sa-santiago-1.aaaaaaaactbyskvixf2iggfzfcuwmkzcsrvja2wbv2pi5bxkaofaogurmkpq"
@@ -268,7 +268,7 @@ install_operator() {
         return 0
     fi
     
-    print_section "Installing WebLogic Kubernetes Operator"
+    print_section "Step 1: Installing WebLogic Kubernetes Operator"
     
     # Check if operator already exists
     if helm list -n "$OPERATOR_NS" 2>/dev/null | grep -q "$OPERATOR_RELEASE"; then
@@ -279,25 +279,25 @@ install_operator() {
     fi
     
     # Create namespace
-    print_step "Creating operator namespace: $OPERATOR_NS"
+    print_step "Step 1.1: Creating operator namespace: $OPERATOR_NS"
     kubectl create namespace "$OPERATOR_NS" 2>/dev/null || {
         print_info "Namespace already exists"
     }
     
     # Create service account
-    print_step "Creating service account: $OPERATOR_SA"
+    print_step "Step 1.2: Creating service account: $OPERATOR_SA"
     kubectl create serviceaccount -n "$OPERATOR_NS" "$OPERATOR_SA" 2>/dev/null || {
         print_info "Service account already exists"
     }
     
     # Add Helm repository
-    print_step "Adding WebLogic Operator Helm repository"
+    print_step "Step 1.3: Adding WebLogic Operator Helm repository"
     print_command "helm repo add weblogic-operator https://oracle.github.io/weblogic-kubernetes-operator/charts --force-update"
     helm repo add weblogic-operator https://oracle.github.io/weblogic-kubernetes-operator/charts --force-update
     helm repo update
     
     # Install operator
-    print_step "Installing operator via Helm"
+    print_step "Step 1.4: Installing operator via Helm"
     print_command "helm install $OPERATOR_RELEASE weblogic-operator/weblogic-operator..."
     helm install "$OPERATOR_RELEASE" weblogic-operator/weblogic-operator \
         --namespace "$OPERATOR_NS" \
@@ -310,7 +310,7 @@ install_operator() {
     print_success "Operator installed successfully"
     
     # Verify operator pods
-    print_step "Verifying operator pods"
+    print_step "Step 1.5: Verifying operator pods"
     kubectl get pods -n "$OPERATOR_NS"
     
     pause_for_review
@@ -322,7 +322,7 @@ install_ingress() {
         return 0
     fi
     
-    print_section "Installing Traefik Ingress Controller"
+    print_section "Step 2: Installing Traefik Ingress Controller"
     
     # Check if ingress already exists
     if helm list -n "$INGRESS_NS" 2>/dev/null | grep -q "$INGRESS_RELEASE"; then
@@ -333,19 +333,19 @@ install_ingress() {
     fi
     
     # Create namespace
-    print_step "Creating ingress namespace: $INGRESS_NS"
+    print_step "Step 2.1: Creating ingress namespace: $INGRESS_NS"
     kubectl create namespace "$INGRESS_NS" 2>/dev/null || {
         print_info "Namespace already exists"
     }
     
     # Add Helm repository
-    print_step "Adding Traefik Helm repository"
+    print_step "Step 2.2: Adding Traefik Helm repository"
     print_command "helm repo add traefik https://helm.traefik.io/traefik --force-update"
     helm repo add traefik https://helm.traefik.io/traefik --force-update
     helm repo update
     
     # Install Traefik
-    print_step "Installing Traefik via Helm"
+    print_step "Step 2.3: Installing Traefik via Helm"
     print_command "helm install $INGRESS_RELEASE traefik/traefik..."
     
     if [ "$INGRESS_SERVICE_TYPE" = "LoadBalancer" ]; then
@@ -371,29 +371,29 @@ install_ingress() {
     print_success "Traefik installed successfully"
     
     # Verify Traefik pods
-    print_step "Verifying Traefik pods"
+    print_step "Step 2.4: Verifying Traefik pods"
     kubectl get pods -n "$INGRESS_NS"
     
     pause_for_review
 }
 
 prepare_domain_namespace() {
-    print_section "Preparing Domain Namespace"
+    print_section "Step 3: Preparing Domain Namespace"
     
     # Create namespace
-    print_step "Creating domain namespace: $DOMAIN_NS"
+    print_step "Step 3.1: Creating domain namespace: $DOMAIN_NS"
     kubectl create namespace "$DOMAIN_NS" 2>/dev/null || {
         print_info "Namespace already exists"
     }
     
     # Label namespace for operator management
-    print_step "Labeling namespace for operator management"
+    print_step "Step 3.2: Labeling namespace for operator management"
     print_command "kubectl label namespace $DOMAIN_NS weblogic-operator=enabled"
     kubectl label namespace "$DOMAIN_NS" weblogic-operator=enabled --overwrite
     
     # Configure Traefik for domain namespace
     if [ "$SKIP_INGRESS" = false ]; then
-        print_step "Configuring Traefik for domain namespace"
+        print_step "Step 3.3: Configuring Traefik for domain namespace"
         print_command "helm upgrade $INGRESS_RELEASE..."
         helm upgrade "$INGRESS_RELEASE" traefik/traefik \
             --namespace "$INGRESS_NS" \
@@ -407,11 +407,11 @@ prepare_domain_namespace() {
 }
 
 create_secrets() {
-    print_section "Creating Kubernetes Secrets"
+    print_section "Step 4: Creating Kubernetes Secrets"
     
     # OCIR secret for pulling images
     if [ -n "$OCIR_USERNAME" ] && [ -n "$OCIR_AUTH_TOKEN" ]; then
-        print_step "Creating OCIR image pull secret"
+        print_step "Step 4.1: Creating OCIR image pull secret"
         kubectl create secret docker-registry "$OCIR_SECRET_NAME" \
             --docker-server="$OCIR_REGISTRY" \
             --docker-username="$OCIR_USERNAME" \
@@ -428,7 +428,7 @@ create_secrets() {
     fi
     
     # WebLogic credentials secret
-    print_step "Creating WebLogic credentials secret"
+    print_step "Step 4.2: Creating WebLogic credentials secret"
     kubectl create secret generic "${DOMAIN_UID}-weblogic-credentials" \
         --from-literal=username="$ADMIN_USERNAME" \
         --from-literal=password="$ADMIN_PASSWORD" \
@@ -437,7 +437,7 @@ create_secrets() {
     }
     
     # Runtime encryption secret
-    print_step "Creating runtime encryption secret"
+    print_step "Step 4.3: Creating runtime encryption secret"
     kubectl create secret generic "${DOMAIN_UID}-runtime-encryption-secret" \
         --from-literal=password="$RUNTIME_PASSWORD" \
         -n "$DOMAIN_NS" 2>/dev/null || {
@@ -445,7 +445,7 @@ create_secrets() {
     }
     
     # List secrets
-    print_step "Verifying secrets"
+    print_step "Step 4.4: Verifying secrets"
     kubectl get secrets -n "$DOMAIN_NS" | grep -E "$DOMAIN_UID|$OCIR_SECRET_NAME" || kubectl get secrets -n "$DOMAIN_NS"
     
     print_success "Secrets created successfully"
@@ -453,7 +453,13 @@ create_secrets() {
 }
 
 create_wdt_config_map() {
-    print_section "Creating WDT Runtime ConfigMap"
+    print_section "Step 4: Creating WDT Runtime ConfigMap"
+    
+    # Check if ConfigMap already exists
+    if kubectl get configmap "${DOMAIN_UID}-wdt-config-map" -n "$DOMAIN_NS" &>/dev/null; then
+        print_warning "WDT ConfigMap already exists"
+        print_info "Updating existing ConfigMap"
+    fi
     
     print_step "Creating WDT runtime properties ConfigMap"
     cat <<EOF | kubectl apply -f - -n "$DOMAIN_NS"
@@ -474,7 +480,23 @@ EOF
 }
 
 create_domain_resource_dii() {
-    print_section "Creating Domain Resource (Domain-in-Image)"
+    print_section "Deployment Model: Domain-in-Image (DII)"
+    
+    # Check if domain already exists
+    if kubectl get domain "$DOMAIN_UID" -n "$DOMAIN_NS" &>/dev/null; then
+        print_warning "Domain '$DOMAIN_UID' already exists"
+        local domain_status=$(kubectl get domain "$DOMAIN_UID" -n "$DOMAIN_NS" -o jsonpath='{.status.conditions[?(@.type=="Available")].status}' 2>/dev/null)
+        if [ "$domain_status" = "True" ]; then
+            print_success "Domain is already running and healthy"
+            pause_for_review
+            return 0
+        else
+            print_info "Domain exists but may not be fully ready"
+            print_info "Use --clean to remove and recreate"
+            pause_for_review
+            return 0
+        fi
+    fi
     
     local manifest_file="$WKO_WORK_DIR/manifests/domain-dii.yaml"
     
@@ -556,7 +578,23 @@ EOF
 }
 
 create_domain_resource_mii() {
-    print_section "Creating Domain Resource (Model-in-Image)"
+    print_section "Deployment Model: Model-in-Image (MII)"
+    
+    # Check if domain already exists
+    if kubectl get domain "$DOMAIN_UID" -n "$DOMAIN_NS" &>/dev/null; then
+        print_warning "Domain '$DOMAIN_UID' already exists"
+        local domain_status=$(kubectl get domain "$DOMAIN_UID" -n "$DOMAIN_NS" -o jsonpath='{.status.conditions[?(@.type=="Available")].status}' 2>/dev/null)
+        if [ "$domain_status" = "True" ]; then
+            print_success "Domain is already running and healthy"
+            pause_for_review
+            return 0
+        else
+            print_info "Domain exists but may not be fully ready"
+            print_info "Use --clean to remove and recreate"
+            pause_for_review
+            return 0
+        fi
+    fi
     
     local manifest_file="$WKO_WORK_DIR/manifests/domain-mii.yaml"
     
@@ -671,11 +709,26 @@ EOF
 }
 
 create_ingress_route() {
-    print_section "Creating Ingress Route"
+    print_section "Step 5: Creating Ingress Route"
+    
+    # Check if ingress route already exists
+    if kubectl get ingressroute "${DOMAIN_UID}-admin-route" -n "$DOMAIN_NS" &>/dev/null; then
+        print_warning "Ingress route '${DOMAIN_UID}-admin-route' already exists"
+        print_info "Updating existing ingress route"
+    fi
     
     local manifest_file="$WKO_WORK_DIR/manifests/ingress.yaml"
     
+    # Determine path prefix based on domain type
+    local path_prefix=""
+    if [ "$DOMAIN_TYPE" = "mii" ]; then
+        path_prefix="/mii"
+    else
+        path_prefix="/dii"
+    fi
+    
     print_step "Generating ingress route YAML"
+    print_info "NOTE: WebLogic Console uses root paths. Only one domain type should be active at a time, or use different hostnames."
     cat > "$manifest_file" << EOF
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
@@ -686,7 +739,7 @@ spec:
   entryPoints:
     - web
   routes:
-    - match: PathPrefix(\`/console\`)
+    - match: PathPrefix(\`/console\`) || PathPrefix(\`/em\`) || PathPrefix(\`/consolehelp\`)
       kind: Rule
       services:
         - name: ${DOMAIN_UID}-adminserver
@@ -694,17 +747,34 @@ spec:
     - match: PathPrefix(\`/hostinfo\`)
       kind: Rule
       services:
-        - name: ${DOMAIN_UID}-cluster-${CLUSTER_NAME}
+        - name: ${DOMAIN_UID}-cluster-base-cluster
           port: 8001
 EOF
 
     print_success "Ingress route YAML created: $manifest_file"
     
-    print_step "Applying ingress route"
-    print_command "kubectl apply -f $manifest_file"
-    kubectl apply -f "$manifest_file"
+    # Check if ingress route needs to be updated
+    local needs_update=false
+    if ! kubectl get ingressroute "${DOMAIN_UID}-admin-route" -n "$DOMAIN_NS" &>/dev/null; then
+        needs_update=true
+    else
+        # Compare with existing - only apply if different
+        local current=$(kubectl get ingressroute "${DOMAIN_UID}-admin-route" -n "$DOMAIN_NS" -o yaml 2>/dev/null | grep -A 20 "spec:")
+        local new=$(cat "$manifest_file" | grep -A 20 "spec:")
+        if [ "$current" != "$new" ]; then
+            needs_update=true
+        fi
+    fi
     
-    print_success "Ingress route applied"
+    if [ "$needs_update" = true ]; then
+        print_step "Applying ingress route"
+        print_command "kubectl apply -f $manifest_file"
+        kubectl apply -f "$manifest_file"
+        print_success "Ingress route applied"
+    else
+        print_success "Ingress route is already up to date"
+    fi
+    
     pause_for_review
 }
 
@@ -769,57 +839,55 @@ verify_deployment() {
 display_access_info() {
     print_section "Access Information"
     
-    # Get node IP
-    local node_ip=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}' 2>/dev/null)
-    if [ -z "$node_ip" ]; then
-        node_ip="<NODE_IP>"
+    # Get LoadBalancer IP
+    local lb_ip=""
+    local service_type=$(kubectl get svc traefik-operator -n "$INGRESS_NS" -o jsonpath='{.spec.type}' 2>/dev/null)
+    
+    if [ "$service_type" = "LoadBalancer" ]; then
+        print_info "Waiting for LoadBalancer IP assignment..."
+        for i in {1..60}; do
+            lb_ip=$(kubectl get svc traefik-operator -n "$INGRESS_NS" -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)
+            if [ -n "$lb_ip" ]; then
+                break
+            fi
+            sleep 2
+        done
     fi
     
-    # Check if running in OKE (Oracle Kubernetes Engine)
-    local is_oke=$(kubectl get nodes -o json | jq -r '.items[0].metadata.labels."node.kubernetes.io/instance-type"' 2>/dev/null | grep -q "VM.Standard" && echo "true" || echo "false")
-    
     echo ""
-    echo -e "${BOLD}${GREEN}═══════════════════════════════════════════════════════════${NC}"
-    echo -e "${BOLD}${GREEN}         WebLogic Domain Deployed Successfully!${NC}"
-    echo -e "${BOLD}${GREEN}═══════════════════════════════════════════════════════════${NC}"
+    echo -e "${BOLD}${GREEN}╔═══════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${BOLD}${GREEN}║      WebLogic Domain Deployed Successfully!               ║${NC}"
+    echo -e "${BOLD}${GREEN}╚═══════════════════════════════════════════════════════════╝${NC}"
     echo ""
-    echo -e "${CYAN}${BOLD}Domain Information:${NC}"
-    echo -e "  Domain UID:  ${BOLD}${DOMAIN_UID}${NC}"
-    echo -e "  Namespace:   ${BOLD}${DOMAIN_NS}${NC}"
-    echo -e "  Type:        ${BOLD}$([ "$DOMAIN_TYPE" = "mii" ] && echo "Model-in-Image" || echo "Domain-in-Image")${NC}"
-    echo ""
-    echo -e "${CYAN}${BOLD}Pods Running:${NC}"
-    kubectl get pods -n "$DOMAIN_NS" --no-headers 2>/dev/null | awk '{printf "  %-30s %s\n", $1, $3}'
-    echo ""
-    echo -e "${CYAN}${BOLD}ACCESS URLS:${NC}"
-    echo -e "${YELLOW}Via Traefik Ingress (NodePort ${INGRESS_HTTP_PORT}):${NC}"
-    echo -e "  WebLogic Console:  ${BOLD}http://${node_ip}:${INGRESS_HTTP_PORT}/console${NC}"
-    echo -e "  Clustered App:     ${BOLD}http://${node_ip}:${INGRESS_HTTP_PORT}/hostinfo/${NC}"
-    echo ""
-    echo -e "${YELLOW}Via AdminServer NodePort (30701):${NC}"
-    echo -e "  WebLogic Console:  ${BOLD}http://${node_ip}:30701/console${NC}"
-    echo ""
-    echo -e "${CYAN}${BOLD}Credentials:${NC}"
-    echo -e "  Username: ${BOLD}${ADMIN_USERNAME}${NC}"
-    echo -e "  Password: ${BOLD}${ADMIN_PASSWORD}${NC}"
+    echo -e "${CYAN}${BOLD}Domain:${NC} ${DOMAIN_UID}"
+    echo -e "${CYAN}${BOLD}Namespace:${NC} ${DOMAIN_NS}"
+    echo -e "${CYAN}${BOLD}Type:${NC} $([ "$DOMAIN_TYPE" = "mii" ] && echo "Model-in-Image" || echo "Domain-in-Image")"
     echo ""
     
-    if [ "$is_oke" = "true" ]; then
-        echo -e "${YELLOW}${BOLD}Note: Running on OKE with private nodes${NC}"
-        echo -e "  ${YELLOW}• NodePort services use internal IPs (${node_ip})${NC}"
-        echo -e "  ${YELLOW}• Access via bastion host or VPN to VCN${NC}"
-        echo -e "  ${YELLOW}• For LoadBalancer access, change Traefik service type:${NC}"
-        echo -e "    ${BOLD}kubectl patch svc traefik-operator -n traefik -p '{\"spec\":{\"type\":\"LoadBalancer\"}}'${NC}"
+    if [ -n "$lb_ip" ]; then
+        echo -e "${BOLD}${GREEN}╔═══════════════════════════════════════════════════════════╗${NC}"
+        echo -e "${BOLD}${GREEN}║                    ACCESS URLS                            ║${NC}"
+        echo -e "${BOLD}${GREEN}╚═══════════════════════════════════════════════════════════╝${NC}"
         echo ""
+        echo -e "${CYAN}${BOLD}WebLogic Admin Console:${NC}"
+        echo -e "  ${BOLD}${GREEN}http://${lb_ip}/console${NC}"
+        echo ""
+        echo -e "${CYAN}${BOLD}Clustered Application (hostinfo):${NC}"
+        echo -e "  ${BOLD}${GREEN}http://${lb_ip}/hostinfo/${NC}"
+        echo ""
+        echo -e "${CYAN}${BOLD}Credentials:${NC}"
+        echo -e "  Username: ${BOLD}${ADMIN_USERNAME}${NC}"
+        echo -e "  Password: ${BOLD}${ADMIN_PASSWORD}${NC}"
+        echo ""
+        echo -e "${BOLD}${GREEN}LoadBalancer IP: ${lb_ip}${NC}"
+        echo ""
+        echo -e "${YELLOW}${BOLD}Note:${NC} Only one domain type (MII or DII) should be active at a time"
+        echo -e "      or use different hostnames for each domain to avoid path conflicts."
+    else
+        echo -e "${YELLOW}${BOLD}Warning: LoadBalancer IP not yet assigned${NC}"
+        echo -e "  Check status: ${BOLD}kubectl get svc traefik-operator -n ${INGRESS_NS}${NC}"
     fi
     
-    echo -e "${CYAN}${BOLD}Alternative Access Methods:${NC}"
-    echo -e "  ${BOLD}1. Port Forward (for local testing):${NC}"
-    echo -e "     kubectl port-forward -n ${DOMAIN_NS} svc/${DOMAIN_UID}-adminserver 8001:8001"
-    echo -e "     Then access: http://localhost:8001/console"
-    echo ""
-    echo -e "  ${BOLD}2. Get Node IPs:${NC}"
-    echo -e "     kubectl get nodes -o wide"
     echo ""
     echo -e "${GREEN}═══════════════════════════════════════════════════════════${NC}"
     echo ""
@@ -828,92 +896,8 @@ display_access_info() {
 }
 
 generate_summary() {
-    print_section "Deployment Summary"
-    
-    local summary_file="$WKO_WORK_DIR/summary.txt"
-    
-    cat > "$summary_file" << EOF
-WebLogic Kubernetes Operator Deployment Summary
-================================================
-
-Deployment Date: $(date)
-Domain Type: $([ "$DOMAIN_TYPE" = "mii" ] && echo "Model-in-Image" || echo "Domain-in-Image")
-
-Operator Configuration:
-  Namespace: $OPERATOR_NS
-  Release: $OPERATOR_RELEASE
-  Service Account: $OPERATOR_SA
-
-Ingress Configuration:
-  Namespace: $INGRESS_NS
-  Release: $INGRESS_RELEASE
-  HTTP Port: $INGRESS_HTTP_PORT
-  HTTPS Port: $INGRESS_HTTPS_PORT
-
-Domain Configuration:
-  Namespace: $DOMAIN_NS
-  Domain UID: $DOMAIN_UID
-  Domain Name: $DOMAIN_NAME
-  Cluster Name: $CLUSTER_NAME
-  Replicas: $INITIAL_REPLICAS
-  
-Images Used:
-$(if [ "$DOMAIN_TYPE" = "mii" ]; then
-    echo "  Base Image: $IMAGE_BASE"
-    echo "  Auxiliary Image: $IMAGE_MII"
-else
-    echo "  Domain Image: $IMAGE_DII"
-fi)
-
-Resources Created:
-  ✓ Operator: $OPERATOR_NS/$OPERATOR_RELEASE
-  ✓ Ingress: $INGRESS_NS/$INGRESS_RELEASE
-  ✓ Domain: $DOMAIN_NS/$DOMAIN_UID
-  ✓ Cluster: $DOMAIN_NS/${DOMAIN_UID}-cluster-1
-  ✓ Secrets: ${DOMAIN_UID}-weblogic-credentials, ${DOMAIN_UID}-runtime-encryption-secret
-
-═══════════════════════════════════════════════════════════
-         ACCESS URLS (via Ingress Controller)
-═══════════════════════════════════════════════════════════
-
-WebLogic Admin Console:
-  http://<NODE_IP>:${INGRESS_HTTP_PORT}/console
-
-Clustered Application (hostinfo):
-  http://<NODE_IP>:${INGRESS_HTTP_PORT}/hostinfo/
-
-Credentials:
-  Username: $ADMIN_USERNAME
-  Password: $ADMIN_PASSWORD
-
-Note: Admin Server also accessible via NodePort:
-  http://<NODE_IP>:30701/console
-
-═══════════════════════════════════════════════════════════
-
-Useful Commands:
-  # View domain status
-  kubectl get domain $DOMAIN_UID -n $DOMAIN_NS
-  
-  # View pods
-  kubectl get pods -n $DOMAIN_NS
-  
-  # View logs
-  kubectl logs -n $DOMAIN_NS ${DOMAIN_UID}-admin-server
-  
-  # Scale cluster
-  kubectl patch cluster ${DOMAIN_UID}-cluster-1 -n $DOMAIN_NS --type merge -p '{"spec":{"replicas":3}}'
-  
-  # Delete domain
-  kubectl delete domain $DOMAIN_UID -n $DOMAIN_NS
-
-Manifests Location: $WKO_WORK_DIR/manifests/
-
-For more information, see: replatform/WKO.md
-EOF
-
-    cat "$summary_file"
-    print_success "Summary saved to: $summary_file"
+    # Summary generation removed - access info is displayed by display_access_info()
+    return 0
 }
 
 clean_environment() {
@@ -1132,7 +1116,9 @@ main() {
     # Handle clean mode
     if [ "$CLEAN_MODE" = true ]; then
         clean_environment
-        sleep 5
+        print_success "Environment cleaned successfully"
+        print_info "Run without --clean to deploy"
+        exit 0
     fi
     
     # Display banner
@@ -1151,19 +1137,38 @@ main() {
     install_operator
     install_ingress
     prepare_domain_namespace
-    create_secrets
-    create_wdt_config_map
     
-    # Create domain based on type
-    if [ "$DOMAIN_TYPE" = "mii" ]; then
-        create_domain_resource_mii
-    else
-        create_domain_resource_dii
+    # Check if domain already exists and is running
+    local domain_exists=false
+    if kubectl get domain "$DOMAIN_UID" -n "$DOMAIN_NS" &>/dev/null; then
+        local domain_status=$(kubectl get domain "$DOMAIN_UID" -n "$DOMAIN_NS" -o jsonpath='{.status.conditions[?(@.type=="Available")].status}' 2>/dev/null)
+        if [ "$domain_status" = "True" ]; then
+            domain_exists=true
+            print_section "Domain Already Running"
+            print_success "Domain '$DOMAIN_UID' is already deployed and healthy"
+            print_info "Skipping domain creation, secrets, ConfigMap, and ingress"
+            print_info "Use --clean to remove and recreate"
+            echo ""
+        fi
     fi
     
-    create_ingress_route
-    wait_for_domain
-    verify_deployment
+    # Only create domain resources if domain doesn't exist
+    if [ "$domain_exists" = false ]; then
+        create_secrets
+        create_wdt_config_map
+        
+        # Create domain based on type
+        if [ "$DOMAIN_TYPE" = "mii" ]; then
+            create_domain_resource_mii
+        else
+            create_domain_resource_dii
+        fi
+        
+        create_ingress_route
+        wait_for_domain
+        verify_deployment
+    fi
+    
     display_access_info
     generate_summary
     
